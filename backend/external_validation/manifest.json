@@ -1,0 +1,164 @@
+{
+  "academic/richardson_482917.pdf": {
+    "category": "academic",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "centered layout, Times body, valid CERT id + checksum, seal/signature text"
+  },
+  "academic/deshpande_501766.pdf": {
+    "category": "academic",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "day-month-year date format, valid id"
+  },
+  "academic/fraud_degree_mill.pdf": {
+    "category": "academic",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "unknown issuer, suspicious text, bad id, future date"
+  },
+  "academic/fraud_mark_stuff.pdf": {
+    "category": "academic",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "marks exceed total, invalid month/day in date, invalid checksum id"
+  },
+  "completion/mitchell_-11472.pdf": {
+    "category": "completion",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "awarded-to phrasing, day-month-year date, no marks/qr/seal"
+  },
+  "completion/okafor_-22931.pdf": {
+    "category": "completion",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "dot-separated date format (not parseable), completion title"
+  },
+  "completion/fraud_instant_cert.pdf": {
+    "category": "completion",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "suspicious text + url, future date, unknown issuer"
+  },
+  "completion/fraud_empty_completion.pdf": {
+    "category": "completion",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "blank document, no extractable fields"
+  },
+  "training/ferreira_40.pdf": {
+    "category": "training",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "hours-based wording, courier font, no marks"
+  },
+  "training/osei_24.pdf": {
+    "category": "training",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "day-month-year date, training title"
+  },
+  "training/fraud_pay_now.pdf": {
+    "category": "training",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "suspicious text, no recipient, unknown issuer"
+  },
+  "training/fraud_no_date.pdf": {
+    "category": "training",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "no date, unknown issuer"
+  },
+  "online/patel_-33018.pdf": {
+    "category": "online",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "platform style, month-day-year date, no signature/seal/qr"
+  },
+  "online/berg_-44102.pdf": {
+    "category": "online",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "slash ISO date, online platform"
+  },
+  "online/fraud_free_cert.pdf": {
+    "category": "online",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "suspicious text + url, future date, no recipient"
+  },
+  "online/fraud_bare_bones.pdf": {
+    "category": "online",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "missing course/date/issuer/title fields"
+  },
+  "technical/suleiman_4-0881.pdf": {
+    "category": "technical",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "vendor phrasing, competency wording, no marks"
+  },
+  "technical/kim_5-1732.pdf": {
+    "category": "technical",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "iso date, competency in AWS"
+  },
+  "technical/fraud_for_sale.pdf": {
+    "category": "technical",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "suspicious text, no recipient, unknown vendor"
+  },
+  "technical/fraud_bad_course.pdf": {
+    "category": "technical",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "course not in keyword list, bad id, no issuer"
+  },
+  "workshop/noor_participation.pdf": {
+    "category": "workshop",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "attendance wording, day-month-year date, no marks"
+  },
+  "workshop/bakker_participation.pdf": {
+    "category": "workshop",
+    "expected": "genuine",
+    "source": "synthetic",
+    "note": "seminar attendance wording"
+  },
+  "workshop/fraud_shady_seminar.pdf": {
+    "category": "workshop",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "suspicious text + url, no recipient/issuer"
+  },
+  "workshop/fraud_blank_attendance.pdf": {
+    "category": "workshop",
+    "expected": "suspicious",
+    "source": "synthetic",
+    "note": "blank document, missing all fields"
+  },
+  "completion/aws_completion_certificate.pdf": {
+    "category": "completion",
+    "expected": "genuine",
+    "source": "real-world",
+    "note": "AWS Training & Certification completion certificate (external, not in training)"
+  },
+  "academic/project_sample_genuine.pdf": {
+    "category": "academic",
+    "expected": "genuine",
+    "source": "project-sample",
+    "note": "project sample (synthetic, generator-style University of Cambridge)"
+  },
+  "academic/project_sample_inconsistent.pdf": {
+    "category": "academic",
+    "expected": "suspicious",
+    "source": "project-sample",
+    "note": "project sample (synthetic, generator-style fraud)"
+  }
+}

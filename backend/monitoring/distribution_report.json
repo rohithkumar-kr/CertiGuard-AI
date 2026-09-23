@@ -1,0 +1,46 @@
+{
+  "baseline": {
+    "certificate_type_distribution": {},
+    "model_versions": {
+      "random_forest_v1": 16,
+      "random_forest_v2": 6,
+      "random_forest_v3": 3
+    },
+    "prediction_distribution": {
+      "genuine": 7,
+      "suspicious": 12
+    },
+    "risk_score": {
+      "mean": 0.6095,
+      "p95": 0.88
+    },
+    "total_verifications": 25
+  },
+  "checked_at_utc": null,
+  "current": {
+    "certificate_type_distribution": {},
+    "model_versions": {
+      "random_forest_v1": 16,
+      "random_forest_v2": 6,
+      "random_forest_v3": 3
+    },
+    "prediction_distribution": {
+      "genuine": 7,
+      "suspicious": 12
+    },
+    "risk_score": {
+      "mean": 0.6095,
+      "p95": 0.88
+    },
+    "total_verifications": 25
+  },
+  "drift": {
+    "certificate_type_jsd": 0.0,
+    "prediction_jsd": 0.0,
+    "risk_score_mean_delta": 0.0,
+    "risk_score_p95_delta": 0.0,
+    "threshold": 0.25
+  },
+  "drift_detected": false,
+  "warnings": []
+}

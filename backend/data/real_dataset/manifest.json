@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "dataset_type": "real",
+  "created_at": null,
+  "updated_at": null,
+  "schema": {
+    "required_fields": [
+      "file_id",
+      "sha256",
+      "label",
+      "original_filename",
+      "source_dir",
+      "extraction_status",
+      "feature_extraction_status",
+      "duplicate_status",
+      "ingested_at"
+    ],
+    "label_values": ["genuine", "suspicious", "uncertain"],
+    "extraction_status_values": ["success", "failed", "pending"],
+    "duplicate_status_values": ["unique", "duplicate", "pending"]
+  },
+  "records": []
+}

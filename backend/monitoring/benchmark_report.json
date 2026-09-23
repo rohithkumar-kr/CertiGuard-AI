@@ -1,0 +1,356 @@
+{
+  "benchmark": "random_forest_vs_xgboost",
+  "pipeline": {
+    "feature_schema": "v2",
+    "feature_count": 30,
+    "dataset_rows": 4000,
+    "seed": 42,
+    "test_size": 0.2,
+    "validation_size": 0.15,
+    "splits": {
+      "train": 2600,
+      "val": 600,
+      "test": 800
+    }
+  },
+  "validation": {
+    "logistic_regression": {
+      "accuracy": 0.9233,
+      "precision": 0.9235,
+      "recall": 0.8263,
+      "f1": 0.8722,
+      "confusion_matrix": [
+        [
+          397,
+          13
+        ],
+        [
+          33,
+          157
+        ]
+      ],
+      "roc_auc": 0.9186,
+      "pr_auc": 0.8625
+    },
+    "random_forest": {
+      "accuracy": 0.93,
+      "precision": 0.9205,
+      "recall": 0.8526,
+      "f1": 0.8852,
+      "confusion_matrix": [
+        [
+          396,
+          14
+        ],
+        [
+          28,
+          162
+        ]
+      ],
+      "roc_auc": 0.9278,
+      "pr_auc": 0.8722
+    },
+    "xgboost": {
+      "accuracy": 0.9267,
+      "precision": 0.9148,
+      "recall": 0.8474,
+      "f1": 0.8798,
+      "confusion_matrix": [
+        [
+          395,
+          15
+        ],
+        [
+          29,
+          161
+        ]
+      ],
+      "roc_auc": 0.917,
+      "pr_auc": 0.8799
+    }
+  },
+  "test": {
+    "logistic_regression": {
+      "accuracy": 0.92,
+      "precision": 0.9439,
+      "recall": 0.7953,
+      "f1": 0.8632,
+      "confusion_matrix": [
+        [
+          534,
+          12
+        ],
+        [
+          52,
+          202
+        ]
+      ],
+      "roc_auc": 0.9175,
+      "pr_auc": 0.8715
+    },
+    "random_forest": {
+      "accuracy": 0.9337,
+      "precision": 0.9389,
+      "recall": 0.8465,
+      "f1": 0.8903,
+      "confusion_matrix": [
+        [
+          532,
+          14
+        ],
+        [
+          39,
+          215
+        ]
+      ],
+      "roc_auc": 0.93,
+      "pr_auc": 0.8938
+    },
+    "xgboost": {
+      "accuracy": 0.9237,
+      "precision": 0.9367,
+      "recall": 0.815,
+      "f1": 0.8716,
+      "confusion_matrix": [
+        [
+          532,
+          14
+        ],
+        [
+          47,
+          207
+        ]
+      ],
+      "roc_auc": 0.9325,
+      "pr_auc": 0.8999
+    }
+  },
+  "external_documents": {
+    "logistic_regression": {
+      "aws_completion_certificate": {
+        "prediction": "genuine",
+        "risk_score": 0.0629,
+        "confidence": 0.9371
+      },
+      "genuine_certificate": {
+        "prediction": "genuine",
+        "risk_score": 0.1732,
+        "confidence": 0.8268
+      },
+      "inconsistent_certificate": {
+        "prediction": "suspicious",
+        "risk_score": 1.0,
+        "confidence": 1.0
+      }
+    },
+    "random_forest": {
+      "aws_completion_certificate": {
+        "prediction": "genuine",
+        "risk_score": 0.2851,
+        "confidence": 0.7149
+      },
+      "genuine_certificate": {
+        "prediction": "genuine",
+        "risk_score": 0.2236,
+        "confidence": 0.7764
+      },
+      "inconsistent_certificate": {
+        "prediction": "suspicious",
+        "risk_score": 0.8795,
+        "confidence": 0.8795
+      }
+    },
+    "xgboost": {
+      "aws_completion_certificate": {
+        "prediction": "genuine",
+        "risk_score": 0.0082,
+        "confidence": 0.9918
+      },
+      "genuine_certificate": {
+        "prediction": "genuine",
+        "risk_score": 0.0183,
+        "confidence": 0.9817
+      },
+      "inconsistent_certificate": {
+        "prediction": "suspicious",
+        "risk_score": 0.9922,
+        "confidence": 0.9922
+      }
+    }
+  },
+  "phase_5c_comparison": {
+    "methodology": "Same stratified split (test=0.20, seed=42) on the v3 feature matrix (data/processed/features.csv). v2 uses its 30 feature columns; v3 uses 31. Both evaluated on identical 800 held-out test rows.",
+    "splits": {
+      "train": 2600,
+      "validation": 600,
+      "test": 800
+    },
+    "models": {
+      "random_forest_v2": {
+        "features": 30,
+        "accuracy": 0.8425,
+        "precision": 0.7083,
+        "recall": 0.8633,
+        "f1": 0.7782,
+        "roc_auc": 0.9064,
+        "pr_auc": 0.876,
+        "confusion_matrix": [
+          [
+            453,
+            91
+          ],
+          [
+            35,
+            221
+          ]
+        ],
+        "note": "30-feature model scored on the same v3 held-out test split (800 rows, includes technical certificates it never trained on)."
+      },
+      "random_forest_v3": {
+        "features": 31,
+        "accuracy": 0.9287,
+        "precision": 0.9422,
+        "recall": 0.8281,
+        "f1": 0.8815,
+        "roc_auc": 0.925,
+        "pr_auc": 0.875,
+        "confusion_matrix": [
+          [
+            531,
+            13
+          ],
+          [
+            44,
+            212
+          ]
+        ],
+        "note": "31-feature model on the identical v3 held-out test split."
+      }
+    },
+    "selection_priority": [
+      "suspicious/fraud recall",
+      "fraud F1",
+      "genuine recall",
+      "precision",
+      "overall F1",
+      "accuracy"
+    ],
+    "external_validation": {
+      "v2_phase_5b": {
+        "accuracy": 0.8889,
+        "genuine_recall": 0.7857,
+        "suspicious_recall": 1.0,
+        "n_fp": 3,
+        "n_fn": 0
+      },
+      "v3_phase_5c": {
+        "accuracy": 0.963,
+        "genuine_recall": 0.9286,
+        "suspicious_recall": 1.0,
+        "n_fp": 1,
+        "n_fn": 0
+      },
+      "v4_candidate_phase_6b": {
+        "accuracy": 0.963,
+        "genuine_recall": 0.9286,
+        "suspicious_recall": 1.0,
+        "n_fp": 1,
+        "n_fn": 0,
+        "note": "random_forest_v4 candidate scored on the SAME frozen 27-doc external set; identical to v3 (the workshop stratum did not change external results because all 27 frozen docs were already handled correctly)."
+      }
+    },
+    "selected_model": "random_forest_v3",
+    "promoted": true,
+    "reason": "v3 generalizes to technical certificates (technical genuine recall 0% -> 100% on the frozen 27-PDF set) with suspicious recall held at 100% and zero false negatives. On the identical held-out split v3 raises accuracy 0.8425 -> 0.9287, precision 0.7083 -> 0.9422 and F1 0.7782 -> 0.8815 because v2 misclassifies ~91 genuine technical-certificate rows it never saw in training.",
+    "phase_6b_comparison": {
+      "methodology": "v4 candidate (trained on the v4 6-type dataset: academic/completion/training/online/technical/workshop, seed 42) scored on the SAME v4 held-out test split as v3, plus the frozen 27-doc external set.",
+      "splits": {
+        "train": 2596,
+        "val": 600,
+        "test": 800
+      },
+      "same_v4_test_split_800": {
+        "random_forest_v3": {
+          "accuracy": 0.9237,
+          "precision": 0.9502,
+          "recall": 0.8077,
+          "f1": 0.8732,
+          "roc_auc": 0.9027,
+          "pr_auc": 0.8679,
+          "fpr": 0.0204,
+          "fnr": 0.1923,
+          "confusion_matrix": [[529, 11], [50, 210]]
+        },
+        "random_forest_v4": {
+          "accuracy": 0.9237,
+          "precision": 0.9502,
+          "recall": 0.8077,
+          "f1": 0.8732,
+          "roc_auc": 0.9024,
+          "pr_auc": 0.872,
+          "fpr": 0.0204,
+          "fnr": 0.1923,
+          "confusion_matrix": [[529, 11], [50, 210]]
+        }
+      },
+      "workshop_stratum_666": {
+        "note": "rows the v3 model never saw in training (workshop type only existed from v4).",
+        "random_forest_v3": {
+          "accuracy": 0.9054,
+          "precision": 0.9371,
+          "recall": 0.7593,
+          "f1": 0.8389,
+          "roc_auc": 0.8755,
+          "pr_auc": 0.8619,
+          "fpr": 0.0244,
+          "fnr": 0.2407,
+          "confusion_matrix": [[439, 11], [52, 164]]
+        },
+        "random_forest_v4": {
+          "accuracy": 0.9114,
+          "precision": 0.9591,
+          "recall": 0.7593,
+          "f1": 0.8475,
+          "roc_auc": 0.9457,
+          "pr_auc": 0.927,
+          "fpr": 0.0156,
+          "fnr": 0.2407,
+          "confusion_matrix": [[443, 7], [52, 164]]
+        }
+      },
+      "external_validation": {
+        "v3": {"accuracy": 0.963, "genuine_recall": 0.9286, "suspicious_recall": 1.0, "n_fp": 1, "n_fn": 0},
+        "v4": {"accuracy": 0.963, "genuine_recall": 0.9286, "suspicious_recall": 1.0, "n_fp": 1, "n_fn": 0}
+      },
+      "decision": "NOT promoted",
+      "reason": "v4 improves the workshop stratum (ROC-AUC 0.8755 -> 0.9457, F1 0.8389 -> 0.8475, FPR 0.0244 -> 0.0156) with zero added false negatives on the frozen set, but the frozen external validation is IDENTICAL to v3 (accuracy 0.963, FP=1, FN=0) and the identical overall test split is unchanged. Because v4 does not measurably improve the required generalization criteria and the frozen set is the acceptance gate, random_forest_v3 remains the active production model. random_forest_v4 is retained as a versioned candidate for roll-forward if real-world workshop documents arrive."
+    },
+    "phase_6c_calibration_threshold": {
+      "methodology": "Threshold alternatives and probability calibration assessed on the v3 active model using a HELD-OUT validation split (600 rows) carved from the v4 processed features (fully out-of-distribution for v3; v3 was trained on the v2/v3 generation). Calibration (sigmoid/isotonic) was fit on the training split (2596 rows) via 3-fold CV ONLY, never on val or the frozen set. Frozen 27-doc external validation re-run after the change via run_generalization_validation.py env overrides.",
+      "threshold_sweep_val_600": {
+        "0.30": {"accuracy": 0.9200, "precision": 0.9016, "recall": 0.8462, "f1": 0.8730, "fpr": 0.0444, "fnr": 0.1538, "fp": 18, "fn": 30},
+        "0.35": {"accuracy": 0.9317, "precision": 0.9425, "recall": 0.8410, "f1": 0.8889, "fpr": 0.0247, "fnr": 0.1590, "fp": 10, "fn": 31},
+        "0.40": {"accuracy": 0.9300, "precision": 0.9422, "recall": 0.8359, "f1": 0.8859, "fpr": 0.0247, "fnr": 0.1641, "fp": 10, "fn": 32},
+        "0.45": {"accuracy": 0.9300, "precision": 0.9474, "recall": 0.8308, "f1": 0.8852, "fpr": 0.0222, "fnr": 0.1692, "fp": 9, "fn": 33},
+        "0.50": {"accuracy": 0.9300, "precision": 0.9474, "recall": 0.8308, "f1": 0.8852, "fpr": 0.0222, "fnr": 0.1692, "fp": 9, "fn": 33},
+        "0.55": {"accuracy": 0.9317, "precision": 0.9529, "recall": 0.8308, "f1": 0.8877, "fpr": 0.0198, "fnr": 0.1692, "fp": 8, "fn": 33},
+        "0.60": {"accuracy": 0.9317, "precision": 0.9529, "recall": 0.8308, "f1": 0.8877, "fpr": 0.0198, "fnr": 0.1692, "fp": 8, "fn": 33}
+      },
+      "calibration_val_600": {
+        "raw": {"brier": 0.0697, "roc_auc": 0.9261, "pr_auc": 0.9064, "mean_pred_prob": 0.3848},
+        "sigmoid": {"brier": 0.0645, "roc_auc": 0.9185, "pr_auc": 0.9011, "mean_pred_prob": 0.3341},
+        "isotonic": {"brier": 0.0633, "roc_auc": 0.9199, "pr_auc": 0.8956, "mean_pred_prob": 0.3329},
+        "actual_val_fraud_rate": 0.325
+      },
+      "candidate": {
+        "version": "random_forest_v4_calibrated",
+        "training": "isotonic calibration via CalibratedClassifierCV(cv=3) fit on training split only",
+        "test_metrics": {"accuracy": 0.9225, "precision": 0.95, "recall": 0.8038, "f1": 0.8708, "confusion_matrix": [[529, 11], [51, 209]]},
+        "external_validation": {"accuracy": 0.963, "genuine_recall": 0.9286, "suspicious_recall": 1.0, "n_fp": 1, "n_fn": 0, "note": "identical to v3; all 27 predictions unchanged"}
+      },
+      "decision": "No threshold change; no production calibration change. 0.5 retained as the decision boundary.",
+      "reason": "(1) Threshold sweep on held-out validation shows 0.5 is already near-optimal: lowering to 0.30 reduces false negatives by only 3 (33 -> 30) while doubling false positives (9 -> 18) and cutting precision 0.9474 -> 0.9016; raising to 0.55/0.60 yields no gain. Per the priority (zero FN + acceptable precision), no single non-0.5 threshold is strictly better. (2) Calibration improves Brier (raw 0.0697 -> isotonic 0.0633) at a negligible AUC cost and changes ZERO predictions on the frozen 27-doc external set, but it is not an accuracy improvement and would change reported risk scores/confidence semantics for no decision benefit. random_forest_v4_calibrated is retained as a versioned candidate; the production model stays random_forest_v3 at threshold 0.5 with raw classifier probabilities. Reported risk scores remain PRELIMINARY AI estimates, not calibrated legal probabilities."
+    },
+    "historical_benchmark": "random_forest_vs_xgboost (below) was run on the v2 dataset and remains unchanged for record."
+  }
+}

@@ -1,0 +1,33 @@
+# Application / environment settings are primarily controlled via .env
+# (see .env.example). This YAML holds pipeline defaults used by the ML
+# pipeline modules so training and inference share one source of truth.
+
+pipeline:
+  seed: 42
+  raw_data: ./data/raw/certificates.csv
+  processed_data: ./data/processed/features.csv
+  dataset_size: 4000
+  fraud_ratio: 0.30
+  test_size: 0.20
+  validation_size: 0.15
+
+models:
+  candidates:
+    - name: logistic_regression
+      enabled: true
+    - name: random_forest
+      enabled: true
+      params:
+        n_estimators: 300
+        max_depth: 12
+        random_state: 42
+  selected: random_forest
+
+artifacts:
+  model_dir: ./models/artifacts
+  metadata_dir: ./models/metadata
+  runs_dir: ./monitoring/mlruns
+
+features:
+  numeric: true
+  target: label

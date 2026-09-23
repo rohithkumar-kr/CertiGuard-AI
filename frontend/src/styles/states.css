@@ -1,0 +1,143 @@
+/* ============================================================
+   Loading, empty and error states
+   ============================================================ */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 48px 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+}
+
+.state--compact {
+  padding: 28px 18px;
+}
+
+.state__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.state__icon--warn {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.state__icon--error {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.state__icon--neutral {
+  color: var(--text-muted);
+  background: var(--neutral-soft);
+  border-color: var(--border-strong);
+}
+
+.state__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.state__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.state__message {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 460px;
+  line-height: 1.6;
+}
+
+.state__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- Spinner ---------- */
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.spinner--sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.spinner--lg {
+  width: 30px;
+  height: 30px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+/* ---------- Skeleton ---------- */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-surface-2);
+  border-radius: var(--radius-sm);
+  min-height: 14px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.12),
+    transparent
+  );
+  animation: shimmer 1.4s var(--ease) infinite;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}

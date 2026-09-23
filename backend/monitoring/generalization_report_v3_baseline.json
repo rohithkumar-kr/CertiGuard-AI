@@ -1,0 +1,695 @@
+{
+  "model_version": "random_forest_v3",
+  "feature_version": "v3",
+  "dataset_version": "v3",
+  "number_of_external_samples": 27,
+  "certificate_types": [
+    "academic",
+    "completion",
+    "training",
+    "online",
+    "technical",
+    "workshop"
+  ],
+  "overall_metrics": {
+    "n": 27,
+    "accuracy": 0.963,
+    "genuine_recall": 0.9286,
+    "suspicious_recall": 1.0,
+    "false_positive_rate": 0.0714,
+    "false_negative_rate": 0.0,
+    "n_false_positives": 1,
+    "n_false_negatives": 0,
+    "false_positives": [
+      "academic/deshpande_501766.pdf"
+    ],
+    "false_negatives": []
+  },
+  "per_type_metrics": {
+    "academic": {
+      "n": 6,
+      "accuracy": 0.8333,
+      "genuine_recall": 0.6667,
+      "suspicious_recall": 1.0,
+      "false_positives": [
+        "academic/deshpande_501766.pdf"
+      ],
+      "false_negatives": []
+    },
+    "completion": {
+      "n": 5,
+      "accuracy": 1.0,
+      "genuine_recall": 1.0,
+      "suspicious_recall": 1.0,
+      "false_positives": [],
+      "false_negatives": []
+    },
+    "training": {
+      "n": 4,
+      "accuracy": 1.0,
+      "genuine_recall": 1.0,
+      "suspicious_recall": 1.0,
+      "false_positives": [],
+      "false_negatives": []
+    },
+    "online": {
+      "n": 4,
+      "accuracy": 1.0,
+      "genuine_recall": 1.0,
+      "suspicious_recall": 1.0,
+      "false_positives": [],
+      "false_negatives": []
+    },
+    "technical": {
+      "n": 4,
+      "accuracy": 1.0,
+      "genuine_recall": 1.0,
+      "suspicious_recall": 1.0,
+      "false_positives": [],
+      "false_negatives": []
+    },
+    "workshop": {
+      "n": 4,
+      "accuracy": 1.0,
+      "genuine_recall": 1.0,
+      "suspicious_recall": 1.0,
+      "false_positives": [],
+      "false_negatives": []
+    }
+  },
+  "false_positives": [
+    "academic/deshpande_501766.pdf"
+  ],
+  "false_negatives": [],
+  "error_analysis": [
+    {
+      "filename": "academic/deshpande_501766.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "suspicious",
+      "risk_score": 0.5418,
+      "extracted_fields": {
+        "cert_id": "CERT-2022-501766",
+        "candidate_name": "Arjun Deshpande",
+        "organization": "Imperial College London",
+        "course": "Mechanical Engineering",
+        "issue_date": "2022-03-05",
+        "marks_total": 100.0,
+        "marks_obtained": 91.0,
+        "grade": "B",
+        "has_signature": true,
+        "has_seal": true,
+        "certificate_title": "Certificate of Merit"
+      },
+      "features": {
+        "cert_id_format_valid": 1,
+        "cert_id_checksum_valid": 1,
+        "issuer_known": 1,
+        "issue_year_valid": 1,
+        "date_consistency_valid": 1,
+        "candidate_name_present": 1,
+        "course_present": 1,
+        "organization_present": 1,
+        "text_field_completeness": 1.0,
+        "marks_pattern_valid": 1,
+        "grade_consistency_valid": 0,
+        "suspicious_keyword_count": 0,
+        "suspicious_url_present": 0,
+        "signature_present": 1,
+        "seal_present": 1,
+        "qr_present": 0,
+        "visual_blank_ratio": 0.0205,
+        "visual_sharpness": 1.0,
+        "visual_noise": 0.0485,
+        "visual_color_anomaly": 0,
+        "text_duplicate_similarity": 0.0,
+        "issuer_domain_trust": 1.0,
+        "certificate_type_academic": 1,
+        "certificate_type_completion": 0,
+        "certificate_type_training": 0,
+        "certificate_type_technical": 0,
+        "recipient_present": 1,
+        "completion_date_present": 1,
+        "issuer_present": 1,
+        "completion_title_present": 1,
+        "certificate_structure_completeness": 1.0
+      },
+      "likely_cause": "E",
+      "reason": "document is internally inconsistent (grade does not match marks); genuine label ambiguous"
+    }
+  ],
+  "recommendations": [
+    "COVERAGE (2 of 3 remaining FPs, technical/suleiman + technical/kim): genuine technical certificates produce certificate_type_academic/completion/training = 0, which is out-of-distribution for v2 (every genuine training row fires at least one type flag). Phase 5C should add technical/workshop certificate types (or fold them into completion/training) so the schema covers these categories.",
+    "AMBIGUOUS (1 of 3, academic/deshpande): the document is internally inconsistent (grade B with 91/100 marks => grade_consistency_valid=0), an artifact of the external template hardcoding marks that do not match its grade. Not fixable without touching the frozen PDF; either regenerate the template with matching marks or accept the flag.",
+    "RESOLVED in PHASE 5B (extraction + coverage): recipient phrases ('we thank', 'we are pleased to present'), dot/dash/slash date formats, marks-from-date bug (2025/05/19), 'certified by'/'organized by'/labeled issuer fields, title-line issuer detection, 'Awarded by the course faculty' false captures, academy->academic feature fix, expanded KNOWN_ISSUERS, and visual_blank_ratio train/runtime semantics alignment.",
+    "RE-EVALUATE: after the Phase 5C dataset expansion and v3 retraining, re-run this exact frozen external set (unchanged) to measure genuine recall improvement before promoting."
+  ],
+  "records": [
+    {
+      "filename": "academic/richardson_482917.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3146,
+      "confidence": 0.6854,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "cert_id": "CERT-2023-482917",
+        "candidate_name": "Emma Richardson",
+        "organization": "University of Oxford",
+        "course": "Data Science",
+        "issue_date": "2023-07-12",
+        "marks_total": 100.0,
+        "marks_obtained": 91.0,
+        "grade": "A",
+        "has_signature": true,
+        "has_seal": true,
+        "certificate_title": "Certificate of Achievement"
+      },
+      "text_preview": "University of Oxford\nCertificate of Achievement\nThis certifies that Emma Richardson\nhas successfully fulfilled the requirements of the Data Science program\nand has been awarded the grade A.\nCertificate Reference : CERT-2023-482917\nMarks : 91 out of 1",
+      "warnings": [],
+      "note": "centered layout, Times body, valid CERT id + checksum, seal/signature text",
+      "source": "synthetic"
+    },
+    {
+      "filename": "academic/deshpande_501766.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "suspicious",
+      "risk_score": 0.5418,
+      "confidence": 0.5418,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "cert_id": "CERT-2022-501766",
+        "candidate_name": "Arjun Deshpande",
+        "organization": "Imperial College London",
+        "course": "Mechanical Engineering",
+        "issue_date": "2022-03-05",
+        "marks_total": 100.0,
+        "marks_obtained": 91.0,
+        "grade": "B",
+        "has_signature": true,
+        "has_seal": true,
+        "certificate_title": "Certificate of Merit"
+      },
+      "text_preview": "Imperial College London\nCertificate of Merit\nThis certifies that Arjun Deshpande\nhas successfully fulfilled the requirements of the Mechanical Engineering\nprogram and has been awarded the grade B.\nCertificate Reference : CERT-2022-501766\nMarks : 91 o",
+      "warnings": [],
+      "note": "day-month-year date format, valid id",
+      "source": "synthetic"
+    },
+    {
+      "filename": "academic/fraud_degree_mill.pdf",
+      "category": "academic",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9932,
+      "confidence": 0.9932,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "organization": "FAKE UNIVERSITY DIPLOMA MILLS INC",
+        "issue_date": "2035-01-01",
+        "certificate_title": "Instant Degree Certificate"
+      },
+      "text_preview": "Instant Degree Certificate\nFAKE UNIVERSITY DIPLOMA MILLS INC\nGet your degree instantly, no classes required.\nBuy verified certificates online. Pay now and receive within 24 hours.\nStudent: John Smith\nID: FREEDEG-2024-666666\nDate of Issue: 2035-01-01",
+      "warnings": [],
+      "note": "unknown issuer, suspicious text, bad id, future date",
+      "source": "synthetic"
+    },
+    {
+      "filename": "academic/fraud_mark_stuff.pdf",
+      "category": "academic",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9483,
+      "confidence": 0.9483,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "cert_id": "CERT-2024-999999",
+        "candidate_name": "Jane Doe",
+        "organization": "Certificate of Achievement",
+        "course": "Computer Science",
+        "marks_total": 100.0,
+        "marks_obtained": 250.0,
+        "grade": "A",
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nCertificate of Achievement\nThis certifies that Jane Doe has completed the Computer Science program.\nMarks: 250 out of 100\nGrade: A\nID: CERT-2024-999999\nDate: 2024-13-45",
+      "warnings": [],
+      "note": "marks exceed total, invalid month/day in date, invalid checksum id",
+      "source": "synthetic"
+    },
+    {
+      "filename": "completion/mitchell_-11472.pdf",
+      "category": "completion",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.296,
+      "confidence": 0.704,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Sara Mitchell",
+        "organization": "CogniTech Solutions",
+        "course": "Cloud Computing",
+        "issue_date": "2024-02-14",
+        "has_signature": true,
+        "certificate_title": "Certificate of Completion"
+      },
+      "text_preview": "CogniTech Solutions\nCertificate of Completion\nAwarded to Sara Mitchell\nSuccessfully completed the Cloud Computing program\nCertificate No. CMP-2024-11472\nDate 14 February 2024\nIssued by CogniTech Solutions\nSignature : Course Director",
+      "warnings": [],
+      "note": "awarded-to phrasing, day-month-year date, no marks/qr/seal",
+      "source": "synthetic"
+    },
+    {
+      "filename": "completion/okafor_-22931.pdf",
+      "category": "completion",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.2987,
+      "confidence": 0.7013,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Daniel Okafor",
+        "organization": "NovaSkills",
+        "course": "Project Management",
+        "issue_date": "2025-03-02",
+        "has_signature": true,
+        "certificate_title": "Completion Certificate"
+      },
+      "text_preview": "NovaSkills\nCompletion Certificate\nAwarded to Daniel Okafor\nSuccessfully completed the Project Management program\nCertificate No. CMP-2025-22931\nDate 2025.03.02\nIssued by NovaSkills\nSignature : Course Director",
+      "warnings": [],
+      "note": "dot-separated date format (not parseable), completion title",
+      "source": "synthetic"
+    },
+    {
+      "filename": "completion/fraud_instant_cert.pdf",
+      "category": "completion",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9967,
+      "confidence": 0.9967,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Someone Random",
+        "organization": "Instant Cert Store",
+        "issue_date": "2030-12-12",
+        "has_url": true,
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nInstant Cert Store\nCertificate of Completion\nBuy a completion certificate for $19, delivered instantly.\nVisit www.instantcertstore.com to order.\nAwarded to Someone Random\nDate: 2030-12-12",
+      "warnings": [],
+      "note": "suspicious text + url, future date, unknown issuer",
+      "source": "synthetic"
+    },
+    {
+      "filename": "completion/fraud_empty_completion.pdf",
+      "category": "completion",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.7505,
+      "confidence": 0.7505,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {},
+      "text_preview": "",
+      "warnings": [
+        "No embedded text found in PDF (scanned document).",
+        "Text extraction unavailable for this document; using structural signals only."
+      ],
+      "note": "blank document, no extractable fields",
+      "source": "synthetic"
+    },
+    {
+      "filename": "training/ferreira_40.pdf",
+      "category": "training",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3496,
+      "confidence": 0.6504,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Lucas Ferreira",
+        "organization": "Peak Performance Academy",
+        "course": "Leadership",
+        "issue_date": "2024-09-03",
+        "certificate_title": "Professional Training Certificate"
+      },
+      "text_preview": "Professional Training Certificate\nPeak Performance Academy\nThis certifies that Lucas Ferreira\nhas completed 40 contact hours of professional\ndevelopment in\nLeadership.\nTraining provider : Peak Performance Academy\nCompletion date : September 3, 2024\nA",
+      "warnings": [],
+      "note": "hours-based wording, courier font, no marks",
+      "source": "synthetic"
+    },
+    {
+      "filename": "training/osei_24.pdf",
+      "category": "training",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3487,
+      "confidence": 0.6513,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Amara Osei",
+        "organization": "TechEdge Training",
+        "course": "Digital Marketing",
+        "issue_date": "2024-08-22",
+        "certificate_title": "Training Certificate"
+      },
+      "text_preview": "Training Certificate\nTechEdge Training\nThis certifies that Amara Osei\nhas completed 24 contact hours of professional\ndevelopment in\nDigital Marketing.\nTraining provider : TechEdge Training\nCompletion date : 22 August 2024\nAuthorized by : Head of Lear",
+      "warnings": [],
+      "note": "day-month-year date, training title",
+      "source": "synthetic"
+    },
+    {
+      "filename": "training/fraud_pay_now.pdf",
+      "category": "training",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9967,
+      "confidence": 0.9967,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "course": "Leadership",
+        "issue_date": "2024-06-30",
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nUnaccredited fast track training, pay now and receive within 24 hours.\nGet your Leadership certificate free, contact us on whatsapp @trainer.\nNo exam needed.\nDate: 2024/06/30",
+      "warnings": [],
+      "note": "suspicious text, no recipient, unknown issuer",
+      "source": "synthetic"
+    },
+    {
+      "filename": "training/fraud_no_date.pdf",
+      "category": "training",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9677,
+      "confidence": 0.9677,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Rahul Verma",
+        "organization": "FastCert Training",
+        "course": "Cloud Computing",
+        "certificate_title": "Training Certificate"
+      },
+      "text_preview": "Training Certificate\nProfessional Training Certificate\nThis certifies that Rahul Verma has completed 30 hours of Cloud Computing training.\nIssued by: FastCert Training",
+      "warnings": [],
+      "note": "no date, unknown issuer",
+      "source": "synthetic"
+    },
+    {
+      "filename": "online/patel_-33018.pdf",
+      "category": "online",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3489,
+      "confidence": 0.6511,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Maya Patel",
+        "organization": "EduStream",
+        "course": "Web Development",
+        "issue_date": "2024-04-03",
+        "certificate_title": "Course Certificate"
+      },
+      "text_preview": "Course Certificate\nEduStream\nWe are pleased to present this certificate to Maya Patel\nfor completing all assignments and assessments in\nWeb Development.\nCertificate ID : ONL-2024-33018\nDate of Completion : April 3, 2024\nAwarded by the course faculty",
+      "warnings": [],
+      "note": "platform style, month-day-year date, no signature/seal/qr",
+      "source": "synthetic"
+    },
+    {
+      "filename": "online/berg_-44102.pdf",
+      "category": "online",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3487,
+      "confidence": 0.6513,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Noah Berg",
+        "organization": "LearnSphere",
+        "course": "Machine Learning",
+        "issue_date": "2025-05-19",
+        "certificate_title": "Certificate of Completion"
+      },
+      "text_preview": "Certificate of Completion\nLearnSphere\nWe are pleased to present this certificate to Noah Berg\nfor completing all assignments and assessments in\nMachine Learning.\nCertificate ID : ONL-2025-44102\nDate of Completion : 2025/05/19\nAwarded by the course fa",
+      "warnings": [],
+      "note": "slash ISO date, online platform",
+      "source": "synthetic"
+    },
+    {
+      "filename": "online/fraud_free_cert.pdf",
+      "category": "online",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9512,
+      "confidence": 0.9512,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "organization": "Course Certificate",
+        "course": "Machine Learning",
+        "issue_date": "2026-01-15",
+        "has_url": true,
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nCourse Certificate\nNo classes required. Purchase a Machine Learning certificate by clicking here.\nwww.cheapcerts.biz\nDate: 2026-01-15",
+      "warnings": [],
+      "note": "suspicious text + url, future date, no recipient",
+      "source": "synthetic"
+    },
+    {
+      "filename": "online/fraud_bare_bones.pdf",
+      "category": "online",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.96,
+      "confidence": 0.96,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "organization": "Certificate",
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nCertificate\nThis certifies that someone completed something.",
+      "warnings": [],
+      "note": "missing course/date/issuer/title fields",
+      "source": "synthetic"
+    },
+    {
+      "filename": "technical/suleiman_4-0881.pdf",
+      "category": "technical",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3184,
+      "confidence": 0.6816,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Ibrahim Suleiman",
+        "organization": "SecurEdge Labs",
+        "course": "Cybersecurity",
+        "issue_date": "2024-11-11",
+        "certificate_title": "Technical Certification"
+      },
+      "text_preview": "SecurEdge Labs\nTechnical Certification\nThis is to certify that Ibrahim Suleiman\nhas demonstrated proficiency in Cybersecurity and is certified by\nSecurEdge Labs.\nCertification code : TECH-2024-0881\nDate of Certification : 11 November 2024\nVerificatio",
+      "warnings": [],
+      "note": "vendor phrasing, competency wording, no marks",
+      "source": "synthetic"
+    },
+    {
+      "filename": "technical/kim_5-1732.pdf",
+      "category": "technical",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.3151,
+      "confidence": 0.6849,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Hannah Kim",
+        "organization": "CloudForge",
+        "course": "AWS",
+        "issue_date": "2025-06-08",
+        "certificate_title": "Certification of Competency"
+      },
+      "text_preview": "CloudForge Academy\nCertification of Competency\nThis is to certify that Hannah Kim\nhas demonstrated proficiency in AWS and is certified by CloudForge\nAcademy.\nCertification code : TECH-2025-1732\nDate of Certification : 2025-06-08\nVerification code emb",
+      "warnings": [],
+      "note": "iso date, competency in AWS",
+      "source": "synthetic"
+    },
+    {
+      "filename": "technical/fraud_for_sale.pdf",
+      "category": "technical",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 1.0,
+      "confidence": 1.0,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "course": "AWS",
+        "issue_date": "2020-01-01",
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nCertifications for sale, verified by nobody. Call 1-900-CERT-FAKE.\nGet your AWS certificate free, contact us on whatsapp @certking.\nDate: 2020-01-01",
+      "warnings": [],
+      "note": "suspicious text, no recipient, unknown vendor",
+      "source": "synthetic"
+    },
+    {
+      "filename": "technical/fraud_bad_course.pdf",
+      "category": "technical",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.6536,
+      "confidence": 0.6536,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Kevin Zhao",
+        "organization": "Technical Certification",
+        "issue_date": "2024-11-03",
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nTechnical Certification\nThis certifies that Kevin Zhao has demonstrated proficiency in Quantum Arcana Forecasting.\nID: XYZ-999\nDate: 2024/11/03",
+      "warnings": [],
+      "note": "course not in keyword list, bad id, no issuer",
+      "source": "synthetic"
+    },
+    {
+      "filename": "workshop/noor_participation.pdf",
+      "category": "workshop",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.2964,
+      "confidence": 0.7036,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Fatima Noor",
+        "organization": "NovaSkills",
+        "course": "Communication Skills",
+        "issue_date": "2024-06-19",
+        "certificate_title": "Workshop Certificate"
+      },
+      "text_preview": "Workshop Certificate\nNovaSkills\nWe thank Fatima Noor\nfor active participation in the Communication Skills\nconducted on 19 June 2024 at City Convention Centre.\nOrganized by : NovaSkills\nCoordinator : Workshop Committee",
+      "warnings": [],
+      "note": "attendance wording, day-month-year date, no marks",
+      "source": "synthetic"
+    },
+    {
+      "filename": "workshop/bakker_participation.pdf",
+      "category": "workshop",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.2964,
+      "confidence": 0.7036,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Tom Bakker",
+        "organization": "Lumina Professional",
+        "course": "Leadership",
+        "issue_date": "2024-10-25",
+        "certificate_title": "Seminar Participation Certificate"
+      },
+      "text_preview": "Seminar Participation Certificate\nLumina Professional\nWe thank Tom Bakker\nfor active participation in the Leadership\nconducted on October 25, 2024 at Grand Plaza Hotel.\nOrganized by : Lumina Professional\nCoordinator : Workshop Committee",
+      "warnings": [],
+      "note": "seminar attendance wording",
+      "source": "synthetic"
+    },
+    {
+      "filename": "workshop/fraud_shady_seminar.pdf",
+      "category": "workshop",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9966,
+      "confidence": 0.9966,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "issue_date": "2024-01-01",
+        "has_url": true,
+        "certificate_title": "Certificate"
+      },
+      "text_preview": "Certificate\nCertificate for sale, pay now, get attendance credits instantly.\nwww.fakeseminars.org\nDate: 2024/01/01",
+      "warnings": [],
+      "note": "suspicious text + url, no recipient/issuer",
+      "source": "synthetic"
+    },
+    {
+      "filename": "workshop/fraud_blank_attendance.pdf",
+      "category": "workshop",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.7505,
+      "confidence": 0.7505,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {},
+      "text_preview": "",
+      "warnings": [
+        "No embedded text found in PDF (scanned document).",
+        "Text extraction unavailable for this document; using structural signals only."
+      ],
+      "note": "blank document, missing all fields",
+      "source": "synthetic"
+    },
+    {
+      "filename": "completion/aws_completion_certificate.pdf",
+      "category": "completion",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.2229,
+      "confidence": 0.7771,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "candidate_name": "Rohith Kumar K R",
+        "course": "AWS",
+        "issue_date": "2025-09-14",
+        "certificate_title": "Completion Certificate"
+      },
+      "text_preview": "AWS Training & Certification\n\n\nMichelle Vaz\nDirector, AWS Training & Certification \n\n\n\nSecurely Connecting AWS\nIoT Devices to the Cloud\nCompleted: September 14, 2025\nCompletion Certificate\nAwarded to\nRohith Kumar K R",
+      "warnings": [],
+      "note": "AWS Training & Certification completion certificate (external, not in training)",
+      "source": "real-world"
+    },
+    {
+      "filename": "academic/project_sample_genuine.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk_score": 0.2494,
+      "confidence": 0.7506,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "cert_id": "CERT-2021-482917",
+        "candidate_name": "Alexandra Carter",
+        "organization": "University of Cambridge",
+        "course": "Data Science",
+        "issue_date": "2021-07-15",
+        "marks_total": 100.0,
+        "marks_obtained": 92.0,
+        "grade": "A",
+        "has_signature": true,
+        "has_seal": true,
+        "has_qr": true,
+        "certificate_title": "Certificate of Achievement"
+      },
+      "text_preview": "University of Cambridge\nCertificate of Achievement\nThis is to certify that Alexandra Carter has successfully completed\nthe requirements of the Data Science program and has been awarded\nthe grade A.\nCertificate ID: CERT-2021-482917\nMarks Obtained: 92 ",
+      "warnings": [],
+      "note": "project sample (synthetic, generator-style University of Cambridge)",
+      "source": "project-sample"
+    },
+    {
+      "filename": "academic/project_sample_inconsistent.pdf",
+      "category": "academic",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk_score": 0.9867,
+      "confidence": 0.9867,
+      "model_version": "random_forest_v3",
+      "extracted_fields": {
+        "organization": "QUICK DIPLOMAS LTD",
+        "course": "Computer Science",
+        "issue_date": "2030-05-01",
+        "marks_total": 100.0,
+        "marks_obtained": 150.0,
+        "grade": "A",
+        "certificate_title": "Instant Certificate"
+      },
+      "text_preview": "QUICK DIPLOMAS LTD\nInstant Certificate\nBuy verified certificates online. No exam needed, instant delivery.\nGet your Computer Science certificate free, contact us on whatsapp @certking.\nCandidate ID: FREECERT-2022-999999\nMarks: 150 out of 100\nGrade: A",
+      "warnings": [],
+      "note": "project sample (synthetic, generator-style fraud)",
+      "source": "project-sample"
+    }
+  ]
+}

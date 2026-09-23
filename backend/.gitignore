@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Environments / secrets
+.env
+.env.*
+!.env.example
+
+# Data & artifacts
+data/raw/*
+data/processed/*
+models/artifacts/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/artifacts/.gitkeep
+!models/metadata/.gitkeep
+monitoring/mlruns/*
+!monitoring/mlruns/.gitkeep
+uploads/
+generated_samples/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db

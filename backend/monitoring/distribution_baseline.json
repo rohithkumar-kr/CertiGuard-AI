@@ -1,0 +1,27 @@
+{
+  "average_extraction_completeness": 0.7417,
+  "certificate_type_distribution": {
+    "academic": 4
+  },
+  "issuer_distribution": {
+    "University of Cambridge": 2
+  },
+  "model_versions": {
+    "random_forest_v1": 16,
+    "random_forest_v2": 6,
+    "random_forest_v3": 8
+  },
+  "prediction_distribution": {
+    "genuine": 11,
+    "suspicious": 13
+  },
+  "review_status_distribution": {
+    "low_risk": 22,
+    "manual_review": 2
+  },
+  "risk_score": {
+    "mean": 0.5658,
+    "p95": 0.88
+  },
+  "total_verifications": 30
+}

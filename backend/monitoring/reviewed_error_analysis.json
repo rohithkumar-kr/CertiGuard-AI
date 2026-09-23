@@ -1,0 +1,17 @@
+{
+  "n_reviewed_decisive": 0,
+  "n_disagreements": 0,
+  "disagreement_rate": null,
+  "min_metric_samples": 10,
+  "min_group_samples": 5,
+  "overall": {
+    "n": 0,
+    "sufficient": false,
+    "note": "insufficient samples"
+  },
+  "by_certificate_type": {},
+  "by_issuer": {},
+  "by_review_status": {},
+  "by_review_priority": {},
+  "by_extraction_completeness": {}
+}

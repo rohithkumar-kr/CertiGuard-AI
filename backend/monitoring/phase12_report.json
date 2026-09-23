@@ -1,0 +1,507 @@
+{
+  "generated_at": "2026-08-20 16:40:38",
+  "reviewed_count": 30,
+  "decisive_count": 14,
+  "total_verifications": 30,
+  "manual_review_rate": 1.0,
+  "assessment_distribution": {
+    "LIKELY_GENUINE": 9,
+    "LIKELY_SUSPICIOUS": 5,
+    "REQUIRES_VERIFICATION": 14,
+    "INSUFFICIENT_EVIDENCE": 2
+  },
+  "evidence_engine": {
+    "confusion_matrix": {
+      "tp": 9,
+      "tn": 4,
+      "fp": 0,
+      "fn": 1,
+      "n": 14
+    },
+    "sufficient": true,
+    "n": 14,
+    "accuracy": 0.9286,
+    "precision": 1.0,
+    "recall": 0.9,
+    "f1": 0.9474,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.1
+  },
+  "ml_model": {
+    "confusion_matrix": {
+      "tp": 9,
+      "tn": 4,
+      "fp": 0,
+      "fn": 1,
+      "n": 14
+    },
+    "sufficient": true,
+    "n": 14,
+    "accuracy": 0.9286,
+    "precision": 1.0,
+    "recall": 0.9,
+    "f1": 0.9474,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.1
+  },
+  "by_certificate_type": {
+    "training": {
+      "n": 6,
+      "sufficient": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "false_positive_rate": null,
+      "false_negative_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 6,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "n": 6
+      }
+    },
+    "academic": {
+      "n": 5,
+      "sufficient": true,
+      "accuracy": 0.8,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6667,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.5,
+      "confusion_matrix": {
+        "tp": 1,
+        "tn": 3,
+        "fp": 0,
+        "fn": 1,
+        "n": 5
+      }
+    },
+    "completion": {
+      "n": 2,
+      "sufficient": false
+    },
+    "technical": {
+      "n": 1,
+      "sufficient": false
+    }
+  },
+  "by_ood_status": {
+    "unusual": {
+      "n": 8,
+      "sufficient": true,
+      "accuracy": 0.875,
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1": 0.8571,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.25,
+      "confusion_matrix": {
+        "tp": 3,
+        "tn": 4,
+        "fp": 0,
+        "fn": 1,
+        "n": 8
+      }
+    },
+    "normal": {
+      "n": 6,
+      "sufficient": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "false_positive_rate": null,
+      "false_negative_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 6,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "n": 6
+      }
+    }
+  },
+  "by_risk_band": {
+    "elevated (0.3-0.5)": {
+      "n": 5,
+      "sufficient": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "false_positive_rate": null,
+      "false_negative_rate": 0.0,
+      "confusion_matrix": {
+        "tp": 5,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "n": 5
+      }
+    },
+    "high (>=0.5)": {
+      "n": 5,
+      "sufficient": true,
+      "accuracy": 0.8,
+      "precision": null,
+      "recall": 0.0,
+      "f1": 0.0,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 1.0,
+      "confusion_matrix": {
+        "tp": 0,
+        "tn": 4,
+        "fp": 0,
+        "fn": 1,
+        "n": 5
+      }
+    },
+    "low (<0.3)": {
+      "n": 4,
+      "sufficient": false
+    }
+  },
+  "by_issuer": {
+    "University of Oxford": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Imperial College London": {
+      "n": 1,
+      "sufficient": false
+    },
+    "FAKE UNIVERSITY DIPLOMA MILLS INC": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Certificate of Achievement": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Instant Cert Store": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Peak Performance Academy": {
+      "n": 1,
+      "sufficient": false
+    },
+    "TechEdge Training": {
+      "n": 1,
+      "sufficient": false
+    },
+    "NovaSkills": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Lumina Professional": {
+      "n": 1,
+      "sufficient": false
+    },
+    "unknown": {
+      "n": 1,
+      "sufficient": false
+    },
+    "QUICK DIPLOMAS LTD": {
+      "n": 1,
+      "sufficient": false
+    },
+    "CISco": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Chennai Institute of Technology": {
+      "n": 1,
+      "sufficient": false
+    },
+    "Cisco Networking Academy": {
+      "n": 1,
+      "sufficient": false
+    }
+  },
+  "false_positives": [],
+  "false_negatives": [
+    {
+      "verification_id": "V2026-A6BEA610",
+      "issuer": "Imperial College London",
+      "risk": 0.542,
+      "reason": "CONSISTENCY:FAIL; risk=0.542"
+    }
+  ],
+  "minimum_decisive_samples": 5,
+  "per_document": [
+    {
+      "document": "academic/richardson_482917.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3146,
+      "assessment": "LIKELY_GENUINE",
+      "source": "synthetic"
+    },
+    {
+      "document": "academic/deshpande_501766.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "suspicious",
+      "risk": 0.5418,
+      "assessment": "LIKELY_SUSPICIOUS",
+      "source": "synthetic"
+    },
+    {
+      "document": "academic/fraud_degree_mill.pdf",
+      "category": "academic",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9932,
+      "assessment": "LIKELY_SUSPICIOUS",
+      "source": "synthetic"
+    },
+    {
+      "document": "academic/fraud_mark_stuff.pdf",
+      "category": "academic",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9483,
+      "assessment": "LIKELY_SUSPICIOUS",
+      "source": "synthetic"
+    },
+    {
+      "document": "completion/mitchell_-11472.pdf",
+      "category": "completion",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.296,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "completion/okafor_-22931.pdf",
+      "category": "completion",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.2987,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "completion/fraud_instant_cert.pdf",
+      "category": "completion",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9967,
+      "assessment": "LIKELY_SUSPICIOUS",
+      "source": "synthetic"
+    },
+    {
+      "document": "completion/fraud_empty_completion.pdf",
+      "category": "completion",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.7505,
+      "assessment": "INSUFFICIENT_EVIDENCE",
+      "source": "synthetic"
+    },
+    {
+      "document": "training/ferreira_40.pdf",
+      "category": "training",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3496,
+      "assessment": "LIKELY_GENUINE",
+      "source": "synthetic"
+    },
+    {
+      "document": "training/osei_24.pdf",
+      "category": "training",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3487,
+      "assessment": "LIKELY_GENUINE",
+      "source": "synthetic"
+    },
+    {
+      "document": "training/fraud_pay_now.pdf",
+      "category": "training",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9967,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "training/fraud_no_date.pdf",
+      "category": "training",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9677,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "online/patel_-33018.pdf",
+      "category": "online",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3489,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "online/berg_-44102.pdf",
+      "category": "online",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3487,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "online/fraud_free_cert.pdf",
+      "category": "online",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9512,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "online/fraud_bare_bones.pdf",
+      "category": "online",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9401,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "technical/suleiman_4-0881.pdf",
+      "category": "technical",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3184,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "technical/kim_5-1732.pdf",
+      "category": "technical",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3151,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "technical/fraud_for_sale.pdf",
+      "category": "technical",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 1.0,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "technical/fraud_bad_course.pdf",
+      "category": "technical",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.6536,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "workshop/noor_participation.pdf",
+      "category": "workshop",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.2964,
+      "assessment": "LIKELY_GENUINE",
+      "source": "synthetic"
+    },
+    {
+      "document": "workshop/bakker_participation.pdf",
+      "category": "workshop",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.2964,
+      "assessment": "LIKELY_GENUINE",
+      "source": "synthetic"
+    },
+    {
+      "document": "workshop/fraud_shady_seminar.pdf",
+      "category": "workshop",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9958,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "synthetic"
+    },
+    {
+      "document": "workshop/fraud_blank_attendance.pdf",
+      "category": "workshop",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.7505,
+      "assessment": "INSUFFICIENT_EVIDENCE",
+      "source": "synthetic"
+    },
+    {
+      "document": "completion/aws_completion_certificate.pdf",
+      "category": "completion",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.2229,
+      "assessment": "LIKELY_GENUINE",
+      "source": "real-world"
+    },
+    {
+      "document": "academic/project_sample_genuine.pdf",
+      "category": "academic",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.2494,
+      "assessment": "REQUIRES_VERIFICATION",
+      "source": "project-sample"
+    },
+    {
+      "document": "academic/project_sample_inconsistent.pdf",
+      "category": "academic",
+      "expected": "suspicious",
+      "prediction": "suspicious",
+      "risk": 0.9867,
+      "assessment": "LIKELY_SUSPICIOUS",
+      "source": "project-sample"
+    },
+    {
+      "document": "7db3d8127651442888419df4aa6567da.pdf",
+      "category": "regression",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.2671,
+      "assessment": "LIKELY_GENUINE",
+      "source": "known-difficult"
+    },
+    {
+      "document": "2c857804dcbd498bb83e5517815ed206.pdf",
+      "category": "regression",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3052,
+      "assessment": "LIKELY_GENUINE",
+      "source": "known-difficult"
+    },
+    {
+      "document": "python_essentials.pdf",
+      "category": "regression",
+      "expected": "genuine",
+      "prediction": "genuine",
+      "risk": 0.3668,
+      "assessment": "LIKELY_GENUINE",
+      "source": "known-difficult"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Environments / secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Data & artifacts
+backend/data/raw/*
+backend/data/processed/*
+backend/models/artifacts/*
+!backend/data/raw/.gitkeep
+!backend/data/processed/.gitkeep
+!backend/models/artifacts/.gitkeep
+!backend/models/metadata/.gitkeep
+backend/monitoring/mlruns/*
+!backend/monitoring/mlruns/.gitkeep
+
+# Uploaded documents
+backend/uploads/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db

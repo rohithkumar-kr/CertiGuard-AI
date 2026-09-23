@@ -1,383 +1,453 @@
-# AI-Powered Certificate Verification & Fraud Detection
+# CertiGuard
 
-> **AI-based preliminary fraud-risk assessment** for educational and professional
-> certificates. The system predicts whether a certificate is **likely genuine** or
-> **suspicious** using extracted fields, document structure, and a trained ML model.
+### AI-Powered Certificate Verification & Fraud Detection
+
+CertiGuard is an AI-assisted certificate analysis platform that examines uploaded documents for potential inconsistencies and suspicious characteristics. It combines document processing, machine-learning inference, forensic and consistency checks, and evidence aggregation to help users review certificates.
+
+> **Important:** CertiGuard provides decision support, not an official determination of authenticity. A model prediction or forensic indicator is not proof of fraud, and a favorable result is not proof that a certificate is genuine. Where necessary, confirm certificates directly with the issuing institution.
 
 ---
 
-## 1. Overview
+## Contents
 
-Forged and tampered certificates are a growing problem for employers, admissions
-offices, and institutions. This project builds an automated **preliminary
-screening** step that flags documents as likely genuine or suspicious before any
-manual review, using a FastAPI backend, a scikit-learn ML pipeline, and a React
-frontend.
+- [Overview](#overview)
+- [Problem Statement](#problem-statement)
+- [Objectives](#objectives)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Architecture](#architecture)
+- [Machine Learning](#machine-learning)
+- [Issuer Verification](#issuer-verification)
+- [Audit Trail and Records](#audit-trail-and-records)
+- [Technology Stack](#technology-stack)
+- [Repository Layout](#repository-layout)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Data and Evaluation](#data-and-evaluation)
+- [Testing](#testing)
+- [Security and Privacy](#security-and-privacy)
+- [Limitations](#limitations)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 2. Important Model Claim
+## Overview
 
-> **This system performs an AI-based PRELIMINARY fraud-risk assessment. It is NOT
-> a legal or institutional authentication service, and it does NOT guarantee
-> document authenticity.**
+Digital certificates are used to represent educational qualifications, professional achievements, and training completion. Manually reviewing certificates can take time, particularly when documents come from different issuers or use different formats.
 
-- Predictions are **probabilistic risk scores** from a model trained on
-  **synthetic/prototype data**.
-- Unusual or out-of-distribution certificate formats **can still produce false
-  positives** (a genuine document incorrectly flagged as suspicious) and false
-  negatives (a fraudulent document missed).
-- Always combine results with **manual review** for high-stakes decisions
-  (hiring, admissions, licensing).
+CertiGuard is intended to assist with the initial review by extracting document information, analyzing a range of signals, and presenting a structured assessment for human review.
 
-## 3. Features
+## Problem Statement
 
-- Upload a certificate (PDF, PNG, JPG/JPEG; max 10 MB) with strict file
-  validation (extension, magic bytes, size) and concurrent-burst protection.
-- Extract text (PDFs), visual signals (blank ratio, sharpness, noise, color
-  anomaly), and structured fields (candidate, issuer, course, dates, marks,
-  grade).
-- Detect certificate type: **academic, completion, training, online, technical,
-  workshop**.
-- Run a trained Random Forest classifier producing `prediction`, `risk_score`,
-  and `confidence`, plus a human-readable **explanation** of detected signals.
-- Persist every verification with the model version used; expose searchable,
-  filterable, sortable history and aggregate metrics.
-- **Monitoring** endpoint with genuine/suspicious/error counts, average risk,
-  model version usage, and certificate-type distribution, plus a local
-  distribution-change (drift) detection script.
-- **Workflow UI** (upload → processing → AI analysis → result), result
-  explanation, manual-review guidance for suspicious results, and a monitoring
-  dashboard with certificate-type breakdown.
-- **Certificate intelligence layer** (Phase 8): structured certificate type,
-  extracted identity, structural signals (signature/seal/QR/URL), document
-  quality indicators, and a consistency engine that surfaces contradictions
-  (future date, marks > total, grade/marks mismatch, invalid certificate ID,
-  unknown issuer, missing expected structure) — missing fields are reported as
-  missing, never as fraud.
-- **Risk explanation engine**: positive trust signals vs risk signals, with
-  wording like "detected risk signal" / "requires manual review" (never
-  "proves fraud").
-- **Three-level review status**: `low_risk`, `manual_review`, `high_risk`
-  layered on the unchanged ML prediction (threshold stays 0.5).
-- **Duplicate / reuse detection** via safe fingerprints: exact file content,
-  certificate ID, and recipient+issuer+course+date. Two different legitimate
-  certificates of the same person are not flagged.
-- **Advanced history**: filter/sort by prediction, review status, certificate
-  type, issuer, date range, and risk range, plus a summary
-  (total / genuine / suspicious / manual review / average risk).
-- **Extended monitoring**: prediction, certificate-type, and review-status
-  distributions, average extraction completeness, issuer distribution, and
-  manual-review rate, all fully local.
-- **Human review feedback loop** (Phase 9): reviewers can confirm genuine /
-  confirm suspicious / mark uncertain per verification. Feedback never changes
-  the ML prediction or risk score — it is stored as immutable evidence.
-- **Out-of-distribution signal** (`ood_status`): advisory `normal` / `unusual` /
-  `insufficient_information` indicator, computed outside the ML features and
-  never treated as proof of fraud.
-- **Review prioritization** (`review_priority`): `low` / `medium` / `high`
-  triage for human review, separate from the prediction and review status.
-- **Feedback analytics**: agreement/disagreement rates, reviewer-vs-model
-  confusion metrics (reported only when sample counts are sufficient),
-  per-type/issuer/priority breakdowns, and extraction-completeness buckets.
-- **Candidate dataset + leakage protection** (Phase 9K): build a leakage-safe
-  train/test candidate CSV from confirmed reviews; duplicate samples are
-  deduplicated and leakage fails loudly instead of being silently promoted.
-- **Review Workbench UI**: browse review-priority-ordered verifications with
-  full signals, submit a decision, and view feedback analytics.
-- **Robust extraction + OCR fallback** (Phase 10): image-heavy / scanned
-  certificates (empty or tiny text layer) are rendered and OCR'd
-  (RapidOCR/ONNX, no external binary). Recovered fields flow through the same
-  fixed 31-feature pipeline — OCR is not a feature and never changes the
-  model. Every verification reports extraction diagnostics (method, confidence,
-  completeness, OCR use/failure); low-confidence or failed extraction triggers
-  *"Low extraction confidence — manual review recommended"* instead of treating
-  missing fields as fraud.
-- **Universal certificate evidence engine** (Phase 12): a deterministic
-  multi-layer evidence layer runs alongside the ML verdict. PDF forensics
-  (launch actions / JavaScript / embedded files / encryption), rendered-image
-  tampering detection (JPEG artifacts, error-level analysis, clone detection),
-  QR analysis (presence never proves authenticity), semantic/OOD checks,
-  registry-based issuer verification (unknown issuer ≠ fake), an aggregate
-  anomaly engine, and duplicate-reuse evidence are fused by a transparent
-  decision tree into `LIKELY_GENUINE` / `LIKELY_SUSPICIOUS` /
-  `REQUIRES_VERIFICATION` / `INSUFFICIENT_EVIDENCE` with per-category evidence
-  surfaced in the UI. The model, 31 features, and 0.5 threshold are untouched;
-  evidence rules never treat missing fields, image-only docs, OCR failure, or
-  unknown issuers as fraud.
-- Centralized configuration (`.env`), structured operational logging, hardened
-  error responses (no internal detail leaks), and a consistent JSON error model.
+Manual certificate review can be difficult to scale and may require reviewers to inspect document content, formatting, and other characteristics individually. CertiGuard aims to organize parts of this process into a repeatable analysis workflow while making clear that automated analysis cannot replace official issuer confirmation.
 
-## 4. Architecture
+## Objectives
 
-```
-Browser (React + Vite SPA)
-        │  POST /api/verify (multipart file)
-        ▼
-FastAPI backend
-  ├─ file validation + safe storage      app/services, app/utils
-  ├─ text/visual extraction              app/services/extraction_service.py
-  ├─ feature building (31 features)      app/services/feature_service.py
-  ├─ ML prediction                       app/ml/model.py + src/inference/predict.py
-  ├─ intelligence + consistency          app/services/intelligence_service.py
-  │                                      app/services/consistency_service.py
-  ├─ duplicate detection                 app/services/duplicate_service.py
-  ├─ OOD + review priority               app/services/ood_service.py
-  │                                      app/services/priority_service.py
-  ├─ evidence engine (Phase 12)          app/services/phase12_pipeline.py
-  │                                      app/services/pdf_forensics.py
-  │                                      app/services/visual_analysis.py
-  │                                      app/services/tampering_service.py
-  │                                      app/services/qr_service.py
-  │                                      app/services/semantic_service.py
-  │                                      app/services/anomaly_service.py
-  │                                      app/services/evidence_fusion.py
-  │                                      app/services/issuer/
-  ├─ feedback recording + analytics      app/services/feedback_service.py
-  ├─ persistence                         SQLAlchemy + SQLite
-  └─ monitoring                          app/api/routes.py + scripts/ + monitoring/
+- Automate initial certificate document analysis.
+- Extract information from supported documents.
+- Identify potential inconsistencies and suspicious characteristics.
+- Combine machine-learning output with additional analysis signals.
+- Present structured information to support human review.
+- Maintain traceability through verification records and audit events.
+- Provide a foundation for evaluation and improvement using appropriately labeled data.
+
+## Features
+
+### Document processing
+
+- PDF text extraction.
+- OCR fallback where required by the document-processing workflow.
+- Preparation of extracted information for downstream analysis.
+
+### Machine-learning analysis
+
+- Random Forest classifier for certificate assessment.
+- A 31-feature model input schema.
+- Model inference used as one signal within the broader workflow.
+
+### Consistency and forensic checks
+
+The analysis pipeline includes consistency/intelligence, forensic, visual, and potential tampering checks. The interpretation of each signal should account for uncertainty and possible false positives.
+
+### Evidence aggregation
+
+Available analysis outputs are combined into a structured assessment. Model output, issuer-verification status, and other document signals should be understood as distinct sources of evidence.
+
+### Issuer-verification status handling
+
+The system defines the following issuer-verification statuses:
+
+| Status | Meaning |
+|---|---|
+| `VERIFIED_BY_ISSUER` | The issuer-verification process reports successful verification. |
+| `NOT_VERIFIED` | The issuer-verification process did not verify the certificate. |
+| `VERIFICATION_UNAVAILABLE` | The issuer-verification process could not be completed. |
+| `ISSUER_UNKNOWN` | The issuer could not be identified or matched to a supported issuer. |
+
+These statuses describe the issuer-verification layer; they are not interchangeable with the model's prediction. An unknown issuer or unavailable service must not automatically be interpreted as fraud.
+
+### Verification records and audit events
+
+The backend includes verification persistence and audit-event functionality. The documented audit route is:
+
+```http
+GET /api/verifications/{id}/audit
 ```
 
-Feedback / learning pipeline (offline):
+Confirm the route and its access controls in the running application before relying on it.
 
+## How It Works
+
+The intended high-level workflow is:
+
+1. **Upload** a certificate document.
+2. **Extract text** from the document, using OCR when necessary.
+3. **Generate features** in the format expected by the model.
+4. **Run model inference** using the configured classifier.
+5. **Perform additional analysis**, including applicable consistency, forensic, visual, and tampering checks.
+6. **Handle issuer verification**, when an issuer-verification service is available.
+7. **Aggregate evidence** from the available analysis stages.
+8. **Present an assessment** for human review.
+9. **Record verification activity** and applicable audit events.
+
+Actual processing and availability depend on the current code and runtime configuration.
+
+## Architecture
+
+```text
+┌─────────────────────────┐
+│ React + TypeScript UI   │
+└────────────┬────────────┘
+             │ HTTP/API
+             ▼
+┌─────────────────────────┐
+│ FastAPI backend          │
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ PDF text extraction/OCR │
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ Feature generation      │
+│ 31-feature model schema │
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ ML and document checks  │
+│ Consistency/forensics   │
+│ Visual/tampering signals│
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ Evidence aggregation    │
+│ Issuer status, if usable│
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ Assessment and records  │
+│ Audit events            │
+└─────────────────────────┘
 ```
-app/services/feedback_service.py  → reviewer decisions (immutable)
-src/feedback/candidate_dataset.py → data/reviewed/*.csv   (leakage-safe candidates)
-src/feedback/analyze.py           → reviewer-vs-model error analysis
-src/feedback/quality_report.py    → candidate dataset quality report
-src/feedback/benchmark.py         → candidate model comparison (never promotes)
+
+This is a conceptual overview, not a guarantee that every stage is enabled in every deployment.
+
+## Machine Learning
+
+### Documented model configuration
+
+| Property | Configuration |
+|---|---|
+| Classifier | Random Forest |
+| Model identifier | `random_forest_v3` |
+| Artifact path | `models/artifacts/model.joblib` |
+| Feature count | 31 |
+| Decision threshold | `0.5` |
+
+The model artifact, preprocessing steps, feature names and order, and threshold form a versioned interface. Changes should be evaluated before being promoted.
+
+### Interpretation
+
+A model prediction is probabilistic and may be wrong. Performance on synthetic or narrow evaluation data may not represent performance on documents from new institutions, formats, scanners, or regions. Results should be interpreted with the available supporting evidence and reviewed by a person.
+
+## Issuer Verification
+
+Issuer verification is conceptually separate from model inference and document analysis. In the documented development state, issuer-side verification endpoints were not configured for known issuers, so independent confirmation may be unavailable.
+
+Do not interpret `ISSUER_UNKNOWN` or `VERIFICATION_UNAVAILABLE` as evidence that a certificate is fraudulent.
+
+## Audit Trail and Records
+
+The backend includes verification persistence and audit-event functionality. The documented audit endpoint is:
+
+```http
+GET /api/verifications/{id}/audit
 ```
 
-Training pipeline (offline):
+Verify the current route definitions and authorization behavior in the codebase. Records and uploaded files may have separate lifecycles, so retention and deletion behavior should be explicitly reviewed before deployment.
 
+## Technology Stack
+
+| Area | Technology |
+|---|---|
+| Backend API | Python, FastAPI |
+| Frontend | React, TypeScript |
+| Machine learning | Scikit-learn Random Forest inference |
+| Model serialization | Joblib |
+| Document processing | PDF text extraction and OCR fallback |
+| Testing | Backend automated tests; frontend type checking |
+
+Refer to the repository's dependency files for exact versions and package-manager instructions.
+
+## Repository Layout
+
+The following is a **partial, illustrative** layout of documented modules. Use the actual checked-out repository as the source of truth; paths may vary.
+
+```text
+CertiGuard/
+├── backend/
+│   └── ...
+├── frontend/
+│   └── src/
+│       └── ...
+├── models/
+│   └── artifacts/
+│       └── model.joblib
+├── data/
+│   ├── real_dataset/
+│   │   ├── genuine/
+│   │   ├── suspicious/
+│   │   └── uncertain/
+│   └── processed/
+├── README.md
+└── LICENSE
 ```
-src/data/make_dataset.py   →  data/raw/certificates.csv  (synthetic, reproducible)
-src/features/build_features.py → data/processed/features.csv
-src/models/train_model.py   →  models/artifacts/ + models/metadata/  (versioned)
-```
 
-The active production model is `random_forest_v3` (31 features). Candidates are
-trained with `--no-promote` and never overwrite the active artifacts.
+The real-data tooling has included modules named `ingest.py`, `feature_alignment.py`, `schema_validation.py`, and `leakage.py` under `backend/src/real_data/`. Confirm their presence and invocation path in the current checkout.
 
-## 5. Tech Stack
+## Getting Started
 
-- **Backend:** Python, FastAPI, Uvicorn, SQLAlchemy (SQLite), python-multipart,
-  pydantic, PyMuPDF (text), Pillow/numpy (visuals), RapidOCR + onnxruntime (OCR,
-  bundled ONNX models — no external Tesseract binary required)
-- **ML:** scikit-learn (Random Forest, Logistic Regression), joblib, numpy, pandas
-- **Frontend:** React 18 + Vite + TypeScript
-- **Testing:** pytest + FastAPI TestClient
+### Prerequisites
 
-## 6. Repository Structure
+Install versions compatible with the repository's dependency files:
 
-```
-AI-Certificate-Verification/
-  backend/
-    app/            FastAPI application (api, core, database, models, schemas, services, ml)
-    src/            ML pipeline (data, features, models, inference)
-    src/feedback/   feedback/label, leakage, splitter, candidate dataset, error analysis, benchmark
-    data/raw        synthetic dataset (v4: 3996 rows, 6 certificate types)
-    data/processed  engineered features
-    data/reviewed   candidate datasets built from confirmed human reviews
-    models/         versioned artifacts + metadata
-    monitoring/     benchmark/generalization/distribution reports, logs
-    scripts/        run scripts, validation, drift detection, feedback analysis
-    tests/          pytest suite (206 tests)
-    external_validation/  frozen 27-PDF held-out validation set
-  frontend/         React + Vite SPA (incl. Review Workbench)
-  docs/             architecture.md, ml_pipeline.md, model_evaluation.md, api.md, DEPLOYMENT.md, feedback_learning.md, extraction_pipeline.md
-```
+- Python
+- Node.js
+- npm or the package manager specified by the frontend
+- Git
 
-## 7. Dataset
-
-There is **no public dataset** of real labeled certificates, so the project uses
-a **synthetic, reproducible dataset**:
-
-- `backend/src/data/make_dataset.py` generates **v4**: 6 certificate types
-  (academic, completion, training, online, technical, workshop) × 666 =
-  **3,996 rows** (1,298 positive / fraudulent).
-- Deterministic seed `42` (env `TRAINING_SEED`).
-- Genuine rows follow realistic field patterns; fraudulent rows deliberately
-  violate them (bad IDs, unknown issuers, inconsistent marks, suspicious
-  keywords, missing seals/signatures, workshop fraud modes, etc.), with some
-  label noise.
-- **All data is synthetic — no real certificates or personal data are used.**
-
-## 8. ML Pipeline
-
-1. `python -m src.data.make_dataset` → raw CSV
-2. `python -m src.features.build_features` → 31-feature table
-3. `python -m src.models.train_model` → train/val/test split (no leakage,
-   `random_state=42`), fits Random Forest + Logistic Regression, selects the
-   best on validation, persists versioned artifacts + metadata
-4. `python -m src.models.evaluate_model` → metrics + per-type analysis
-5. `python -m scripts.run_generalization_validation` → frozen 27-PDF held-out
-   external validation through the **real production pipeline**
-
-Model versioning:
+### 1. Clone the repository
 
 ```bash
-python -m src.models.train_model                       # train + promote
-python -m src.models.train_model --no-promote --version random_forest_vX   # candidate
-python -m src.models.train_model --calibrate isotonic --no-promote ...     # calibrated candidate
+git clone <YOUR_GITHUB_REPOSITORY_URL>
+cd CertiGuard
 ```
 
-Calibration (if used) is fit on the **training split only** via
-`CalibratedClassifierCV`, never on validation or the frozen set.
+Replace the URL and directory name with your repository's actual values.
 
-## 9. Model Evaluation
+### 2. Install backend dependencies
 
-Active model: **random_forest_v3**, 31 features.
+Create and activate a virtual environment from the appropriate backend directory.
 
-Held-out test split (v3 own split, 800 rows):
+**Windows PowerShell example:**
 
-| Metric | Value |
-|---|---|
-| Accuracy | 0.9287 |
-| Precision | 0.9422 |
-| Recall | 0.8281 |
-| F1 | 0.8815 |
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
-Frozen external validation — 27 PDFs, never seen in training, run through the
-real pipeline:
+Install dependencies using the requirements or project file that actually exists in the backend:
 
-| Metric | Value |
-|---|---|
-| Accuracy | 0.963 |
-| Genuine recall | 0.9286 |
-| Suspicious recall | 1.0000 |
-| False positives | 1 |
-| False negatives | 0 |
-
-The single false positive is `academic/deshpande_501766.pdf`, an internally
-inconsistent genuine certificate (grade "B" vs 91/100) — an expected
-false-positive pattern for an AI screening tool. Full per-type metrics and
-decision records live in `backend/monitoring/` and `docs/model_evaluation.md`.
-
-## 10. API
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/health` | status, app name, model version/loaded |
-| GET | `/api/model/info` | model version, name, feature list, metrics |
-| POST | `/api/verify` | upload one certificate (PDF/PNG/JPG), returns verdict + intelligence |
-| GET | `/api/verifications?limit=N` | recent verifications (1–100); supports `search`, `prediction`, `review_status`, `certificate_type`, `issuer`, `date_from`/`date_to`, `risk_min`/`risk_max`, `sort` |
-| GET | `/api/verifications/summary` | summary counts over history (respects the same filters) |
-| GET | `/api/metrics` | totals, genuine/suspicious/error counts, avg risk, cert-type/review-status/issuer distributions, extraction completeness, manual-review rate |
-| GET | `/api/verifications/{id}` | full detail for one verification (reviewer workflow) |
-| POST | `/api/verifications/{id}/feedback` | record a human review decision (confirmed_genuine / confirmed_suspicious / uncertain) |
-| GET | `/api/feedback/summary` | feedback counts: reviewed, per label, agreement/disagreement rates |
-| GET | `/api/feedback/analytics` | reviewer-vs-model metrics with sample-size guards |
-
-Errors: 400 invalid file, 422 malformed request, 503 model unavailable, 500
-unexpected. Multiple uploads to `/api/verify` are rejected, and concurrent
-verifications are bounded. Responses follow a consistent `{"detail": ...}`
-JSON error model with no internal traceback leakage. See `docs/api.md`.
-
-## 11. Setup & Installation
-
-Requirements: Python 3.13, Node.js 18+.
-
-```bash
-# Backend
-cd backend
-python -m venv venv
-venv\Scripts\activate            # Windows  |  source venv/bin/activate
+```powershell
 pip install -r requirements.txt
-copy .env.example .env           # Windows  |  cp .env.example .env
-
-# Frontend
-cd ../frontend
-npm install
 ```
 
-Environment variables (see `backend/.env.example`): `DATABASE_URL`,
-`MODEL_VERSION`, `MODEL_ARTIFACT_DIR`, `MODEL_METADATA_DIR`,
-`MAX_UPLOAD_SIZE_MB`, `ALLOWED_UPLOAD_EXTENSIONS`, `CORS_ORIGINS`,
-`TRAINING_SEED`, `BACKEND_HOST`, `BACKEND_PORT`, `APP_ENV`, `LOG_LEVEL`,
-`UPLOAD_RETENTION_MAX`, `MAX_CONCURRENT_VERIFICATIONS`, `DECISION_THRESHOLD`,
-and the OCR settings (`OCR_ENABLED`, `OCR_ENGINE`, `OCR_DPI`,
-`OCR_MAX_PAGES`, `OCR_MIN_TEXT_CHARS`, `OCR_HYBRID_CHARS`,
-`OCR_MIN_COMPLETENESS`, `OCR_LANGUAGES` — see `docs/extraction_pipeline.md`).
-For production deployment see `docs/DEPLOYMENT.md`.
+Run the installation command from the directory containing that file. If the project uses `pyproject.toml`, a lockfile, or another package manager, follow its documented workflow instead.
 
-## 12. Usage
+### 3. Configure the environment
+
+Create the required local environment file(s) based on the project's configuration references or example files. Do not commit populated secrets or credentials.
+
+### 4. Run the backend
+
+Use the actual FastAPI application module and working directory from the repository. For example, if `main.py` is importable as `main`:
 
 ```bash
-# Train (first run only; artifacts are already included)
-cd backend
-python -m src.training.run_pipeline
+uvicorn main:app --reload --port 8000
+```
 
-# Run backend
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+This example assumes the module path is correct for your checkout. The local address is commonly `http://127.0.0.1:8000` when using this command.
 
-# Run frontend (dev, proxies /api to backend)
-cd frontend
+### 5. Run the frontend
+
+From the frontend directory:
+
+```bash
+npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` and upload a certificate.
+Use the scripts and package manager declared by the frontend's `package.json`. Open the development URL printed in the terminal.
 
-## 13. Testing, Monitoring & Limitations
+## Configuration
 
-**Testing:** 259 pytest tests — preprocessing, features, model, API success/error
-paths, file validation, upload retention, DB idempotency/indexes, generalization,
-dataset reproducibility, Phase 8 certificate intelligence, review status,
-duplicate detection, history filters, and summary, plus Phase 9 feedback
-recording/validation, agreement & disagreement tracking, OOD signal, review
-priority, verification detail, candidate dataset generation (dedupe + leakage),
-error analysis, quality report, analytics sample-size guards, and Phase 10
-extraction/OCR tests (text sufficiency, OCR fallback, hybrid, graceful OCR
-failure, extraction metadata, and model invariants), plus Phase 12 evidence
-engine tests (evidence unit tests, model-integrity invariants, and the
-known-difficult regression set).
+Configuration varies by environment. Review the current source and example environment files for required settings, which may include:
 
-```bash
-cd backend
-python -m pytest tests -q
+- Backend API URL.
+- Database or persistence configuration.
+- Model and inference settings.
+- Issuer-verification settings.
+- External-service credentials, if applicable.
+
+A variable being set does not establish that its service is connected or working. Validate service health and responses before relying on it.
+
+## API Reference
+
+The documented audit route is:
+
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/api/verifications/{id}/audit` | Retrieve audit events for a verification record. |
+
+For the complete API reference, inspect the current FastAPI route definitions. If enabled, FastAPI's interactive documentation is often available at:
+
+```text
+http://127.0.0.1:8000/docs
 ```
 
-**Monitoring & feedback analysis:**
+The URL above assumes the backend is running on port `8000` and exposes the standard documentation route.
 
-```bash
-# Live metrics via API
-curl http://localhost:8000/api/metrics
+## Data and Evaluation
 
-# Distribution-change (drift) detection, local-only
-python scripts/check_distribution_change.py --update-baseline   # snapshot baseline
-python scripts/check_distribution_change.py                     # compare + report
+The project has used synthetic training data and an external PDF validation set during development. Previously reported evaluation figures included:
 
-# Feedback / learning loop tooling (offline, never auto-promotes)
-python scripts/analyze_feedback.py              # reviewer-vs-model error analysis
-python scripts/data_quality_report.py           # candidate dataset quality report
-python scripts/build_candidate_dataset.py       # leakage-safe candidate CSV
-python scripts/benchmark_reviewed_models.py     # compare candidates (no promotion)
+| Metric | Historical reported value |
+|---|---:|
+| External validation accuracy | 0.963 |
+| Genuine recall | 0.9286 |
+| Suspicious recall | 1.0 |
+| False positives reported | 1 |
+| False negatives reported | 0 |
 
-# Phase 12 evidence-engine validation (dedicated DB, never touches dev data)
-python scripts/run_phase12_validation.py        # verify external corpus + regression set
-python scripts/generate_phase12_report.py       # confusion matrix / FPR / FNR / FP-FN lists
+These are historical figures from development notes, not independently reproduced results in this README. They should not be presented as a guarantee of performance. The reported external set contained 27 PDFs and had limited representation of real certificates, which restricts conclusions about real-world generalization.
+
+### Real-data ingestion
+
+The documented ingestion workflow uses class folders such as:
+
+```text
+data/real_dataset/
+├── genuine/
+├── suspicious/
+└── uncertain/
 ```
 
-See `docs/feedback_learning.md` for the full Phase 9 workflow.
+Its supporting modules include ingestion, feature alignment, schema validation, and leakage checks. Uncertain labels are intended to be excluded from supervised training.
 
-**Limitations:**
+A previously documented example invocation is:
 
-- Trained on **synthetic data**; performance on real certificates is a
-  preliminary estimate, not a guarantee.
-- **False positives are possible** on unusual/OOD genuine certificates (e.g.,
-  internally inconsistent but genuine academic documents).
-- The `manual_review` review status is an advisory banding of the ML risk
-  score; it does not change the model prediction and is not proof of either
-  genuineness or fraud. Duplicate detection identifies reuse of the same file,
-  certificate ID, or exact identity combination; it cannot detect all forms of
-  forgery.
-- OCR (RapidOCR, bundled) recovers text from image-heavy documents, but OCR
-  quality varies with scan resolution and layout; a failed or low-confidence
-  extraction is flagged for manual review rather than treated as fraud.
-- The Phase 12 evidence engine is heuristic and transparent by design: tampering
-  detection (JPEG artifacts / ELA / clone detection) is best-effort and can be
-  fooled by heavy legitimate re-compression, external verification is **disabled
-  by default**, and the engine never treats missing fields, image-only
-  documents, OCR failure, or unknown issuers as fraud. It is a supplement to the
-  ML verdict, not a replacement.
-- The feedback loop collects labeled review evidence for future retraining; it
-  does not change the current model and no candidate is auto-promoted.
-- This is **not** a legal authentication verdict.
+```bash
+python -m src.real_data.ingest --base-dir ./data/real_dataset
+```
+
+Run this only from a directory where the `src` package is importable, and verify the CLI options against the current implementation before use.
+
+Before training or evaluating with real documents:
+
+1. Ensure the documents were collected and may be used lawfully.
+2. Use a documented, reliable labeling process.
+3. Review generated features and schema-validation results.
+4. Keep a separate, frozen evaluation set.
+5. Check for duplicates and data leakage.
+6. Evaluate performance across relevant document sources and classes.
+7. Review results before considering any model or threshold change.
+
+Successful ingestion does not itself validate a model or justify replacing the production artifact.
+
+## Testing
+
+Use the test and quality-check commands defined by the current repository.
+
+Examples, if supported by the project:
+
+```bash
+pytest
+```
+
+```bash
+npx tsc --noEmit
+```
+
+Historical development reports described different test checkpoints, so those counts are intentionally not stated as current results here. A passing test suite does not independently establish real-world model accuracy, issuer confirmation, or production readiness.
+
+## Security and Privacy
+
+Certificates can contain personal and confidential information. Before deploying CertiGuard:
+
+- Require authentication and authorization for protected operations.
+- Restrict access to uploaded files, verification history, and audit data.
+- Keep secrets and credentials out of source control.
+- Do not publish private certificates or datasets without a lawful basis and appropriate safeguards.
+- Define retention and deletion policies for both files and database records.
+- Validate file types, file sizes, and processing limits.
+- Avoid leaking sensitive document contents through logs or error messages.
+- Review dependency security and deployment configuration.
+- Clearly communicate the limitations of automated results.
+
+An earlier architecture review identified access control as a deployment concern. Reassess the current implementation before exposing the application to untrusted users.
+
+## Limitations
+
+The following points were identified during development and should be checked against the current version:
+
+- **Real-world evaluation:** Synthetic data and a small external PDF set are insufficient to establish broad generalization.
+- **Issuer integrations:** Issuer-side verification was not configured for known issuers in the documented state.
+- **Data pipeline validation:** Real-data ingestion requires testing with appropriately labeled documents and review of its outputs.
+- **Access control:** Authentication and authorization need to be verified before deployment.
+- **Data lifecycle:** Uploaded files and database records may have different retention behavior.
+- **Frontend experience:** Progress handling, cancellation, timeout behavior, and automated UI coverage were identified as improvement areas.
+- **Operational readiness:** CI, dependency alignment, configuration validation, and deployment documentation should be reviewed.
+
+These are historical development observations, not a claim that every item remains unresolved.
+
+## Roadmap
+
+Potential areas for future work:
+
+- Expand the diverse, human-verified real-world certificate dataset.
+- Maintain a frozen real-world evaluation set.
+- Improve calibration and document the evaluation methodology.
+- Add authorized issuer integrations where available.
+- Strengthen authentication, authorization, and privacy controls.
+- Improve retention and deletion workflows.
+- Add robust upload limits and error handling.
+- Improve progress reporting, cancellation, and timeout handling.
+- Expand frontend automated tests.
+- Add CI and dependency/security checks.
+- Improve monitoring, auditability, and deployment documentation.
+
+## Contributing
+
+Contributions are welcome.
+
+1. Fork the repository.
+2. Create a focused feature branch.
+3. Make your changes.
+4. Add or update tests where appropriate.
+5. Run the relevant checks.
+6. Submit a pull request describing the change and its impact.
+
+Changes to the model, feature schema, threshold, or evaluation data should include a clear validation methodology and results. Avoid promoting model changes without deliberate review.
+
+## License
+
+This project is licensed under the **MIT License**. See the [`LICENSE`](LICENSE) file for details.
+
+## Disclaimer
+
+CertiGuard is an AI-assisted certificate analysis and decision-support project. Automated predictions and forensic indicators may contain errors. A suspicious indicator is not proof of fraud, and a favorable result is not proof of authenticity. Obtain independent confirmation from the issuing institution when required and handle certificate data responsibly.
+
+---
+
+**CertiGuard — Certificate analysis supported by machine learning and evidence.**

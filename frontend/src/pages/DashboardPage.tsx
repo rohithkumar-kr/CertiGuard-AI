@@ -1,51 +1,72 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "../router/Router";
-import { getHealth, getMetrics, getModelInfo } from "../services/api";
-import { ApiError } from "../services/api";
-import type { HealthResponse, MetricsResponse, ModelInfoResponse } from "../types";
+import {
+  ApiError,
+  getHealth,
+  getMetrics,
+  getModelInfo,
+  getVerifications,
+} from "../services/api";
+import type {
+  HealthResponse,
+  MetricsResponse,
+  ModelInfoResponse,
+  VerificationRecord,
+} from "../types";
 import { formatDateShort, formatPercent } from "../utils/format";
 import { reviewStatusToCaseStatus } from "../utils/status";
 import { ErrorState, LoadingState } from "../components/ui/Feedback";
-import { StatCard } from "../components/ui/DataDisplay";
-import { StatusBadge } from "../components/ui/DataDisplay";
+import { StatCard, StatusBadge } from "../components/ui/DataDisplay";
 import { PageHeader } from "../components/layout/AppShell";
 
 export function DashboardPage() {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [modelInfo, setModelInfo] = useState<ModelInfoResponse | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [recent, setRecent] = useState<VerificationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([getMetrics(), getModelInfo(), getHealth()])
-      .then(([m, mi, h]) => {
+
+    Promise.all([getMetrics(), getModelInfo(), getHealth(), getVerifications({ limit: 5, sort: "newest" })])
+      .then(([m, mi, h, recents]) => {
+        if (cancelled) return;
         setMetrics(m);
         setModelInfo(mi);
         setHealth(h);
+        setRecent(recents);
       })
       .catch((e) => {
-        setError(e instanceof ApiError ? e.message : "Could not load dashboard data.");
+        if (!cancelled) {
+          setError(e instanceof ApiError ? e.message : "Could not load dashboard data.");
+        }
       })
-      .finally(() => setLoading(false));
-  };
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  useEffect(() => {
+    const cancel = load();
+    return cancel;
+  }, [load]);
+
   const reviewDist = metrics?.review_status_distribution ?? {};
-  const totalReview = Object.values(reviewDist).reduce((a, b) => a + b, 0);
   const predictionDist = metrics?.prediction_distribution ?? {};
 
   return (
     <div>
       <PageHeader
-        title="Certificate Verification Center"
-        subtitle="Analyze certificate documents using machine learning classification, evidence fusion, issuer verification and forensic document checks. Every decision is derived from independent evidence sources."
+        title="Verification Center"
+        subtitle="Analyze certificate documents using the machine-learning classifier, evidence fusion, issuer verification and forensic checks. Every value on this page is owner-scoped: it reflects only your verifications."
         actions={
           <>
             <Link to="/verify" className="btn btn--primary btn--lg">
@@ -69,7 +90,7 @@ export function DashboardPage() {
               label="Total Verifications"
               value={metrics.total_verifications}
               tone="accent"
-              hint="Documents analyzed by the platform"
+              hint="Documents you have analyzed"
             />
             <StatCard
               label="Verified"
@@ -89,12 +110,6 @@ export function DashboardPage() {
               tone="suspicious"
               hint="AI prediction: suspicious"
             />
-            <StatCard
-              label="Insufficient Evidence"
-              value="—"
-              tone="neutral"
-              hint="Not reported by the verification API"
-            />
           </div>
 
           <div className="grid grid--aside section" style={{ marginTop: 20 }}>
@@ -105,26 +120,27 @@ export function DashboardPage() {
                   View all
                 </Link>
               </div>
-              {metrics.recent.length === 0 ? (
+              {recent.length === 0 ? (
                 <p className="muted" style={{ fontSize: 13 }}>
                   No verifications recorded yet. Upload a certificate to begin an
                   investigation.
                 </p>
               ) : (
                 <div className="group-list">
-                  {metrics.recent.map((r) => {
+                  {recent.map((r) => {
                     const status = reviewStatusToCaseStatus(r.review_status);
                     return (
                       <Link
                         key={r.verification_id}
                         to={`/investigations/${r.verification_id}`}
                         className="group-list__item case-row"
-                        onClick={undefined}
                       >
-                        <span>
+                        <span style={{ minWidth: 0 }}>
                           <span className="case-row__name">{r.filename ?? "Unnamed document"}</span>
                           <span className="case-row__sub">
-                            {r.verification_id} · {formatDateShort(r.created_at)}
+                            <span className="mono">{r.verification_id}</span>
+                            <span>·</span>
+                            <span>{formatDateShort(r.created_at)}</span>
                           </span>
                         </span>
                         <span className="case-row__right">
@@ -173,7 +189,7 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              {totalReview > 0 ? (
+              {Object.keys(reviewDist).length > 0 ? (
                 <div className="card">
                   <div className="card__head">
                     <h2>Review status distribution</h2>
@@ -193,7 +209,11 @@ export function DashboardPage() {
                           <span className="bar-row__track">
                             <span
                               className="bar-row__fill"
-                              style={{ width: `${Math.round((count / totalReview) * 100)}%` }}
+                              style={{
+                                width: `${Math.round(
+                                  (count / Math.max(1, metrics.total_verifications)) * 100,
+                                )}%`,
+                              }}
                             />
                           </span>
                           <span className="bar-row__value">{count}</span>
@@ -219,7 +239,7 @@ export function DashboardPage() {
                             }`}
                             style={{
                               width: `${Math.round(
-                                (count / metrics.total_verifications) * 100,
+                                (count / Math.max(1, metrics.total_verifications)) * 100,
                               )}%`,
                             }}
                           />

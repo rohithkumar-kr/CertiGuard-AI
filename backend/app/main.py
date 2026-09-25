@@ -30,6 +30,28 @@ configure_cors(app, settings.cors_origins)
 def on_startup() -> None:
     settings.ensure_dirs()
     init_db()
+    if not settings.clerk_issuer:
+        logger.warning(
+            "CLERK_ISSUER is NOT configured: every protected API request will be "
+            "rejected with HTTP 401 (\"Authentication unavailable\"). Set it in "
+            "backend/.env to your Clerk instance's Frontend API URL, e.g. "
+            "https://<your-instance>.clerk.accounts.dev."
+        )
+    elif settings.clerk_issuer_is_jwks_url:
+        logger.warning(
+            "CLERK_ISSUER is set to your Clerk JWKS URL (it ends in "
+            ".well-known/jwks.json). The issuer check compares the token's `iss` "
+            "claim against the Frontend API URL only, so the JWKS suffix is "
+            "automatically stripped and auth will work — but please set "
+            "CLERK_ISSUER to the plain Frontend API URL to avoid confusion: "
+            "https://<your-instance>.clerk.accounts.dev"
+        )
+    if not settings.clerk_secret_key and not settings.clerk_jwt_key:
+        logger.warning(
+            "Neither CLERK_SECRET_KEY nor CLERK_JWT_KEY is configured: session "
+            "tokens cannot be verified, so every protected API request will be "
+            "rejected with HTTP 401."
+        )
 
 
 @app.get("/")
@@ -90,7 +112,12 @@ def _json_safe(value):
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(_: Request, exc: StarletteHTTPException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": str(exc.detail)})
+    # Preserve any response headers (e.g. WWW-Authenticate on 401) that the
+    # exception carries.
+    headers = dict(exc.headers) if exc.headers else None
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": str(exc.detail)}, headers=headers
+    )
 
 
 @app.exception_handler(Exception)

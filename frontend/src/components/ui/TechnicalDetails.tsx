@@ -42,7 +42,6 @@ export function TechnicalDetails({
 }
 
 export function JsonBlock({ data }: { data: unknown }) {
-  return (
-    <pre>{JSON.stringify(data, null, 2)}</pre>
-  );
+  const serialized = JSON.stringify(data, null, 2);
+  return <pre>{serialized ?? "No analysis data was returned."}</pre>;
 }

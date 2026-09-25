@@ -1,4 +1,5 @@
 import type { ResultView } from "../../utils/result";
+import { formatPercent } from "../../utils/format";
 import { SeverityBadge } from "../ui/DataDisplay";
 import { OOD_LABELS, PRIORITY_LABELS } from "../../utils/status";
 
@@ -26,13 +27,29 @@ function Icon({ name }: { name: "ok" | "warn" | "info" }) {
   );
 }
 
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function textValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
 export function ExplainabilityCard({ result }: { result: ResultView }) {
   const positive = result.positiveSignals ?? [];
   const risk = result.riskSignals ?? [];
   const findings = result.intelligence?.consistency_findings ?? [];
   const quality = result.intelligence?.quality_indicators ?? {};
-
+  const riskScore = finiteNumber(result.riskScore);
+  const certificateType = textValue(result.intelligence?.certificate_type?.primary);
+  const issuer = textValue(result.issuer);
+  const documentQuality =
+    textValue(quality.text_extraction_quality) ?? textValue(quality.visual_quality);
+  const blankDocument =
+    typeof quality.blank_document === "boolean" ? quality.blank_document : null;
   const evidenceSummary = result.evidence?.summary ?? {};
+  const anomalyLevel = textValue(evidenceSummary.anomaly_level);
+  const anomalyScore = finiteNumber(evidenceSummary.anomaly_score);
 
   return (
     <div className="card">
@@ -42,44 +59,52 @@ export function ExplainabilityCard({ result }: { result: ResultView }) {
       </div>
 
       <div className="kv" style={{ marginBottom: 18 }}>
-        <div className="kv__item">
-          <span className="kv__label">ML prediction</span>
-          <span className="kv__value">{result.prediction}</span>
-        </div>
-        <div className="kv__item">
-          <span className="kv__label">AI risk score</span>
-          <span className="kv__value">
-            {result.riskScore === null || result.riskScore === undefined
-              ? "Not available"
-              : `${Math.round(result.riskScore * 100)}%`}
-          </span>
-        </div>
-        <div className="kv__item">
-          <span className="kv__label">Certificate type</span>
-          <span className="kv__value">
-            {result.intelligence?.certificate_type?.primary ?? "Not available"}
-          </span>
-        </div>
-        <div className="kv__item">
-          <span className="kv__label">Issuer</span>
-          <span className="kv__value">{result.issuer ?? "Not available"}</span>
-        </div>
-        <div className="kv__item">
-          <span className="kv__label">Document quality</span>
-          <span className="kv__value">
-            {quality.blank_document
-              ? "Blank / mostly empty"
-              : quality.visual_quality === "ok"
-                ? "Visually acceptable"
-                : "Degraded visual quality"}
-          </span>
-        </div>
-        <div className="kv__item">
-          <span className="kv__label">Out-of-distribution</span>
-          <span className="kv__value">
-            {result.oodStatus ? (OOD_LABELS[result.oodStatus] ?? result.oodStatus) : "Not available"}
-          </span>
-        </div>
+        {textValue(result.prediction) ? (
+          <div className="kv__item">
+            <span className="kv__label">ML prediction</span>
+            <span className="kv__value">{result.prediction}</span>
+          </div>
+        ) : null}
+        {riskScore !== null ? (
+          <div className="kv__item">
+            <span className="kv__label">AI risk score</span>
+            <span className="kv__value">{formatPercent(riskScore)}</span>
+          </div>
+        ) : null}
+        {certificateType ? (
+          <div className="kv__item">
+            <span className="kv__label">Certificate type</span>
+            <span className="kv__value">{certificateType}</span>
+          </div>
+        ) : null}
+        {issuer ? (
+          <div className="kv__item">
+            <span className="kv__label">Issuer</span>
+            <span className="kv__value">{issuer}</span>
+          </div>
+        ) : null}
+        {blankDocument !== null ? (
+          <div className="kv__item">
+            <span className="kv__label">Blank document</span>
+            <span className="kv__value">
+              {blankDocument ? "Blank / mostly empty" : "No blank-document signal"}
+            </span>
+          </div>
+        ) : null}
+        {documentQuality ? (
+          <div className="kv__item">
+            <span className="kv__label">Document quality</span>
+            <span className="kv__value">{documentQuality}</span>
+          </div>
+        ) : null}
+        {result.oodStatus ? (
+          <div className="kv__item">
+            <span className="kv__label">Out-of-distribution</span>
+            <span className="kv__value">
+              {OOD_LABELS[result.oodStatus] ?? result.oodStatus}
+            </span>
+          </div>
+        ) : null}
         {result.reviewPriority ? (
           <div className="kv__item">
             <span className="kv__label">Review priority</span>
@@ -88,14 +113,13 @@ export function ExplainabilityCard({ result }: { result: ResultView }) {
             </span>
           </div>
         ) : null}
-        {evidenceSummary.anomaly_level ? (
+        {anomalyLevel || anomalyScore !== null ? (
           <div className="kv__item">
-            <span className="kv__label">Anomaly level</span>
+            <span className="kv__label">Anomaly</span>
             <span className="kv__value">
-              {evidenceSummary.anomaly_level}
-              {evidenceSummary.anomaly_score !== undefined
-                ? ` (${Number(evidenceSummary.anomaly_score).toFixed(2)})`
-                : ""}
+              {anomalyLevel}
+              {anomalyLevel && anomalyScore !== null ? " · " : null}
+              {anomalyScore !== null ? anomalyScore.toFixed(2) : null}
             </span>
           </div>
         ) : null}
@@ -109,15 +133,15 @@ export function ExplainabilityCard({ result }: { result: ResultView }) {
           <ul className="group-list">
             {positive.map((s) => (
               <li key={s.key} className="group-list__item">
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }}>
                   <span style={{ color: "var(--green)", marginTop: 2 }}>
                     <Icon name="ok" />
                   </span>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
                       {s.label}
                     </div>
-                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2, overflowWrap: "anywhere" }}>
                       {s.detail}
                     </div>
                   </div>
@@ -136,26 +160,28 @@ export function ExplainabilityCard({ result }: { result: ResultView }) {
           <ul className="group-list">
             {risk.map((s) => (
               <li key={s.key} className="group-list__item">
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }}>
                   <span style={{ color: "var(--amber)", marginTop: 2 }}>
                     <Icon name="warn" />
                   </span>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: 8,
                         flexWrap: "wrap",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--text-primary)",
+                         fontSize: 13,
+                         fontWeight: 600,
+                         color: "var(--text-primary)",
+                         overflowWrap: "anywhere",
+
                       }}
                     >
                       {s.label}
                       {s.severity ? <SeverityBadge severity={s.severity} /> : null}
                     </div>
-                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2, overflowWrap: "anywhere" }}>
                       {s.detail}
                     </div>
                   </div>
@@ -174,15 +200,15 @@ export function ExplainabilityCard({ result }: { result: ResultView }) {
           <ul className="group-list">
             {findings.map((f) => (
               <li key={f.key} className="group-list__item">
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }}>
                   <span style={{ color: "var(--amber)", marginTop: 2 }}>
                     <Icon name="warn" />
                   </span>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
                       {f.label}
                     </div>
-                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+                    <div className="muted" style={{ fontSize: 12.5, marginTop: 2, overflowWrap: "anywhere" }}>
                       {f.detail}
                     </div>
                   </div>

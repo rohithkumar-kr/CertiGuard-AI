@@ -101,8 +101,13 @@ def record_feedback(
     verification_id: str,
     reviewer_label: str,
     reviewer_note: str | None = None,
+    user_id: str | None = None,
 ) -> VerificationFeedback:
     """Record a reviewer decision for a verification.
+
+    ``user_id`` is the Clerk user id that owns the verification being reviewed
+    (it is copied onto the feedback row so feedback queries can be scoped to a
+    user without joining).
 
     Raises AppError for:
       - unknown verification
@@ -137,6 +142,7 @@ def record_feedback(
     evidence = _evidence_snapshot(verification)
     feedback = VerificationFeedback(
         verification_id=verification.verification_id,
+        user_id=user_id or verification.user_id,
         reviewer_label=reviewer_label,
         reviewer_note=note or None,
         original_prediction=verification.prediction,
@@ -161,7 +167,8 @@ def record_feedback(
     db.add(feedback)
     db.commit()
     db.refresh(feedback)
-    _record_review_event(db, verification_id, reviewer_label, feedback, verification)
+    _record_review_event(db, verification_id, reviewer_label, feedback, verification,
+                         feedback.user_id)
     logger.info(
         "Feedback recorded: verification=%s label=%s disagreement=%s",
         verification_id, reviewer_label, feedback.is_disagreement,
@@ -171,12 +178,14 @@ def record_feedback(
 
 def _record_review_event(db: Session, verification_id: str, reviewer_label: str,
                          feedback: VerificationFeedback,
-                         verification: Verification) -> None:
+                         verification: Verification,
+                         user_id: str | None = None) -> None:
     """Append the REVIEW_ACTION audit event (best-effort)."""
     try:
         audit_service.record_event(
             db,
             verification_id=verification_id,
+            user_id=user_id,
             event_type=audit_service.EVENT_REVIEW_ACTION,
             stage="review",
             status=audit_service.STATUS_RECORDED,
@@ -201,9 +210,12 @@ def _record_review_event(db: Session, verification_id: str, reviewer_label: str,
         logger.exception("Could not record review audit event")
 
 
-def feedback_summary(db: Session) -> dict:
-    """Summary counts over the feedback collection (9B)."""
-    rows = db.query(VerificationFeedback).all()
+def feedback_summary(db: Session, user_id: str | None = None) -> dict:
+    """Summary counts over the feedback collection (9B), scoped to ``user_id``."""
+    report_query = db.query(VerificationFeedback)
+    if user_id is not None:
+        report_query = report_query.filter(VerificationFeedback.user_id == user_id)
+    rows = report_query.all()
     by_label: dict[str, int] = {}
     for row in rows:
         by_label[row.reviewer_label] = by_label.get(row.reviewer_label, 0) + 1
@@ -212,8 +224,11 @@ def feedback_summary(db: Session) -> dict:
     decisive = sum(by_label.get(l, 0) for l in QUALIFYING_LABELS)
     disagreements = sum(1 for r in rows if r.is_disagreement)
 
-    # not_reviewed = successful verifications without a feedback row.
-    successful = db.query(Verification).filter(Verification.prediction != "error").count()
+    # not_reviewed = the acting user's successful verifications without feedback.
+    successful_query = db.query(Verification).filter(Verification.prediction != "error")
+    if user_id is not None:
+        successful_query = successful_query.filter(Verification.user_id == user_id)
+    successful = successful_query.count()
 
     summary = {
         "total_reviewed": total_reviewed,
@@ -289,17 +304,20 @@ def _f1(tp: int, fp: int, fn: int) -> float | None:
     return round(2 * tp / denom, 4) if denom else None
 
 
-def feedback_analytics(db: Session) -> dict:
-    """Monitoring/analytics view over reviewed certificates (9I).
+def feedback_analytics(db: Session, user_id: str | None = None) -> dict:
+    """Monitoring/analytics view over the user's reviewed certificates (9I).
 
     Percentages are only reported when the underlying sample count is high
     enough; otherwise the metric is reported as "insufficient samples".
     """
-    rows = db.query(VerificationFeedback).all()
+    feedback_query = db.query(VerificationFeedback)
+    if user_id is not None:
+        feedback_query = feedback_query.filter(VerificationFeedback.user_id == user_id)
+    rows = feedback_query.all()
     reviewed = [r for r in rows if r.reviewer_label in _LABEL_SET]
     decisive = [r for r in reviewed if r.reviewer_label in _QUALIFYING_SET]
 
-    summary = feedback_summary(db)
+    summary = feedback_summary(db, user_id=user_id)
     overall = _aggregate(decisive)
 
     def _per_group(rows_: list, key_attr: str) -> dict:
@@ -327,7 +345,10 @@ def feedback_analytics(db: Session) -> dict:
             priority_counter.get(r.review_priority or "unknown", 0) + 1
         )
 
-    total_successful = db.query(Verification).filter(Verification.prediction != "error").count()
+    total_successful_query = db.query(Verification).filter(Verification.prediction != "error")
+    if user_id is not None:
+        total_successful_query = total_successful_query.filter(Verification.user_id == user_id)
+    total_successful = total_successful_query.count()
 
     return {
         "summary": summary,

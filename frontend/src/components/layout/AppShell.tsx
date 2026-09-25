@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useUser } from "@clerk/clerk-react";
 import { Link, useRouter } from "../../router/Router";
 import type { HealthResponse } from "../../types";
 import { getHealth } from "../../services/api";
+import { useAuthSession } from "../../auth/AuthSession";
 
 function Icon({ name }: { name: string }) {
   const paths: Record<string, string> = {
@@ -40,6 +42,8 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { path } = useRouter();
+  const { user } = useUser();
+  const { signOut } = useAuthSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
@@ -67,6 +71,10 @@ export function AppShell({
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+
       {sidebarOpen ? (
         <button
           type="button"
@@ -82,8 +90,8 @@ export function AppShell({
             <Icon name="shield" />
           </span>
           <span>
-            <span className="sidebar__brand-name">VeriCert Forensics</span>
-            <span className="sidebar__brand-sub">Evidence Platform</span>
+            <span className="sidebar__brand-name">CertiGuard AI</span>
+            <span className="sidebar__brand-sub">Verification &amp; Forensics</span>
           </span>
         </div>
 
@@ -147,18 +155,40 @@ export function AppShell({
           </div>
           <div className="topbar__spacer" />
           <div className="topbar__meta">
-            <span className="topbar__chip">
+            <span className="topbar__chip topbar__chip--status">
               <span
                 className={`status-dot ${
                   healthOk ? "status-dot--ok" : health ? "status-dot--warn" : "status-dot--error"
                 }`}
                 aria-hidden="true"
               />
-              {healthOk ? "Systems operational" : "Backend unavailable"}
+              <span className="topbar__chip-text">
+                {healthOk ? "Systems operational" : "Backend unavailable"}
+              </span>
             </span>
             {health?.model_version ? (
-              <span className="topbar__chip mono">model: {health.model_version}</span>
+              <span className="topbar__chip topbar__chip--model mono">
+                model: {health.model_version}
+              </span>
             ) : null}
+            <div className="topbar__user">
+              <span className="topbar__user-avatar" aria-hidden="true">
+                {(user?.firstName ?? user?.username ?? "U").slice(0, 1).toUpperCase()}
+              </span>
+              <span className="topbar__user-name">
+                {(user?.firstName ?? "User") +
+                  (user?.primaryEmailAddress?.emailAddress
+                    ? ` · ${user.primaryEmailAddress.emailAddress}`
+                    : "")}
+              </span>
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => signOut()}
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </header>
 
@@ -167,12 +197,8 @@ export function AppShell({
         </main>
 
         <footer className="app-footer">
-          <span>
-            VeriCert Forensics — AI Certificate Verification &amp; Digital Forensics Platform
-          </span>
-          <span>
-            Preliminary assessment · not a legal authentication verdict
-          </span>
+          <span>CertiGuard AI — AI Certificate Verification &amp; Digital Forensics Platform</span>
+          <span>Preliminary assessment · not a legal authentication verdict</span>
         </footer>
       </div>
     </div>

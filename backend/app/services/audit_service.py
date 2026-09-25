@@ -123,16 +123,20 @@ def record_event(
     description: str | None = None,
     details: dict | None = None,
     stage: str | None = None,
+    user_id: str | None = None,
 ) -> AuditEvent:
     """Append one audit event and commit it immediately.
 
     The commit is intentional: the event survives even if the rest of the
     verification later fails, so the trail reflects what actually happened.
+
+    ``user_id`` is the Clerk user id that owns the verification being audited.
     """
     if severity is None:
         severity = _derive_severity(status)
     event = AuditEvent(
         verification_id=verification_id,
+        user_id=user_id,
         event_type=event_type,
         stage=stage,
         status=status,
@@ -147,14 +151,18 @@ def record_event(
     return event
 
 
-def list_audit_events(db: Session, verification_id: str) -> list[AuditEvent]:
-    """Return the append-only timeline for a verification (oldest first)."""
-    return (
-        db.query(AuditEvent)
-        .filter(AuditEvent.verification_id == verification_id)
-        .order_by(AuditEvent.id.asc())
-        .all()
-    )
+def list_audit_events(
+    db: Session, verification_id: str, user_id: str | None = None
+) -> list[AuditEvent]:
+    """Return the append-only timeline for a verification (oldest first).
+
+    When ``user_id`` is given the events are additionally filtered to that
+    owner (defense in depth; the API layer already enforces ownership).
+    """
+    query = db.query(AuditEvent).filter(AuditEvent.verification_id == verification_id)
+    if user_id is not None:
+        query = query.filter(AuditEvent.user_id == user_id)
+    return query.order_by(AuditEvent.id.asc()).all()
 
 
 def event_count(db: Session, verification_id: str) -> int:

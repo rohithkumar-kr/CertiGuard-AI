@@ -75,7 +75,9 @@ export function ConfidenceIndicator({
   value: number | null | undefined;
   tone?: "verified" | "requires_verification" | "suspicious" | "neutral" | "accent";
 }) {
-  const pct = value === null || value === undefined ? null : Math.round(value * 100);
+  const normalized =
+    typeof value === "number" && Number.isFinite(value) ? value : null;
+  const pct = normalized === null ? null : Math.max(0, Math.min(100, Math.round(normalized * 100)));
   return (
     <div className="confidence">
       <div className="confidence__head">
@@ -95,14 +97,16 @@ export function ConfidenceIndicator({
 /* ---------- Risk meter ---------- */
 
 export function RiskMeter({ value }: { value: number | null | undefined }) {
-  const pct = value === null || value === undefined ? null : Math.round(value * 100);
+  const normalized =
+    typeof value === "number" && Number.isFinite(value) ? value : null;
+  const pct = normalized === null ? null : Math.max(0, Math.min(100, Math.round(normalized * 100)));
   return (
     <div className="risk-meter">
       <div className="risk-meter__head">
-        <span>AI risk score</span>
-        <strong>{pct === null ? "—" : formatPercent(value)}</strong>
+        <span>Risk score</span>
+        <strong>{pct === null ? "—" : formatPercent(normalized)}</strong>
       </div>
-      <div className="risk-meter__track" role="img" aria-label={`AI risk score ${pct ?? 0}%`}>
+      <div className="risk-meter__track" role="img" aria-label={`Risk score ${pct ?? 0}%`}>
         <div className="risk-meter__fill" style={{ width: `${pct ?? 0}%` }} />
       </div>
     </div>

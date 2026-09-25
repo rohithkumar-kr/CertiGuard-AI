@@ -1,80 +1,85 @@
 import type { EvidenceDetails } from "../../types";
 import type { ResultView } from "../../utils/result";
-import { KeyValue, KeyValueGrid, SeverityBadge } from "../ui/DataDisplay";
+import { EvidenceStatusChip, KeyValue, KeyValueGrid, SeverityBadge } from "../ui/DataDisplay";
 import { EmptyState } from "../ui/Feedback";
+
+const STATUS_META: Record<
+  string,
+  { label: string; chip: "PASS" | "WARNING" | "FAIL" | "UNKNOWN" }
+> = {
+  none_detected: { label: "No tampering indicators", chip: "PASS" },
+  clean: { label: "No tampering indicators", chip: "PASS" },
+  possible: { label: "Possible tampering indicators", chip: "WARNING" },
+  suspect: { label: "Possible tampering indicators", chip: "WARNING" },
+  strong_indicators: { label: "Strong tampering indicators", chip: "FAIL" },
+  tampered: { label: "Strong tampering indicators", chip: "FAIL" },
+  unable_to_determine: { label: "Unable to determine tampering status", chip: "UNKNOWN" },
+};
+
+function textValue(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return null;
+}
 
 export function TamperingPanel({ result }: { result: ResultView }) {
   const tampering: NonNullable<EvidenceDetails["tampering"]> =
     result.evidenceDetails?.tampering ?? { status: "", findings: [] };
-  const visual = result.evidenceDetails?.visual ?? {};
-  const visualSignals = (visual.signals ?? visual) as Record<string, unknown> | undefined;
-
+  const statusValue = typeof tampering.status === "string" ? tampering.status : "";
+  const statusMeta = STATUS_META[statusValue];
   const findings = Array.isArray(tampering.findings) ? tampering.findings : [];
-  const statusStr = tampering.status ? String(tampering.status) : "";
-  const statusLabel =
-    statusStr.includes("suspect") || statusStr.includes("tampered")
-      ? "Tampering indicators detected"
-      : statusStr === "clean"
-        ? "No tampering indicators"
-        : statusStr || "Not available";
-
-  const signalEntries = visualSignals
-    ? Object.entries(visualSignals).filter(
-        ([, v]) => v === true || v === "yes" || v === 1,
-      )
-    : [];
+  const visual = result.evidenceDetails?.visual ?? {};
+  const visualKeys = Object.keys(visual);
 
   return (
-    <div>
+    <div className="tampering-panel">
       <div className="card">
         <div className="card__head">
-          <h2>Tampering analysis</h2>
-          <span
-            className={`evidence-status ${
-              statusStr.includes("suspect") || statusStr.includes("tampered")
-                ? "evidence-status--fail"
-                : statusStr === "clean"
-                  ? "evidence-status--pass"
-                  : "evidence-status--unknown"
-            }`}
-          >
-            {statusStr.includes("suspect") || statusStr.includes("tampered")
-              ? "Fail"
-              : statusStr === "clean"
-                ? "Pass"
-                : "Unknown"}
-          </span>
+          <div>
+            <h2>Tampering analysis</h2>
+            <p className="card__head-sub">Rendered-document and structural checks</p>
+          </div>
+          <EvidenceStatusChip status={statusMeta?.chip ?? "UNKNOWN"} />
         </div>
         <KeyValueGrid>
-          <KeyValue label="Status" value={statusLabel} />
+          <KeyValue
+            label="Status"
+            value={statusMeta?.label ?? (statusValue || "Not available")}
+            muted={!statusMeta && !statusValue}
+          />
           <KeyValue
             label="Detected findings"
             value={findings.length}
             muted={findings.length === 0}
           />
           <KeyValue
-            label="Visual anomalies"
-            value={signalEntries.length}
-            muted={signalEntries.length === 0}
+            label="Visual analysis"
+            value={visualKeys.length > 0 ? "Data returned" : "Not available"}
+            muted={visualKeys.length === 0}
           />
         </KeyValueGrid>
 
         {findings.length > 0 ? (
-          <div className="finding-list" style={{ marginTop: 14 }}>
-            {findings.map((f, idx) => {
-              const rec = f as Record<string, unknown>;
+          <div className="finding-list tampering-findings">
+            {findings.map((finding, index) => {
+              const record =
+                finding && typeof finding === "object"
+                  ? (finding as Record<string, unknown>)
+                  : {};
+              const kind = textValue(record.kind);
+              const label = textValue(record.label) ?? kind ?? "Tampering finding";
+              const detail = textValue(record.detail);
+              const severity = textValue(record.severity);
+              const key = kind ?? label ?? `finding-${index}`;
               return (
-                <div className="finding" key={String(rec.key ?? rec.label ?? idx)}>
+                <div className="finding" key={`${key}-${index}`}>
                   <div className="finding__body">
                     <div className="finding__head">
-                      <span className="finding__label">
-                        {(rec.label as string) ?? (rec.key as string) ?? "Tampering finding"}
-                      </span>
-                      {rec.severity ? <SeverityBadge severity={String(rec.severity)} /> : null}
+                      <span className="finding__label">{label}</span>
+                      {severity ? <SeverityBadge severity={severity} /> : null}
                     </div>
-                    {rec.detail ? (
-                      <p className="finding__detail">{String(rec.detail)}</p>
-                    ) : null}
+                    {kind ? <span className="finding__group">{kind}</span> : null}
+                    {detail ? <p className="finding__detail">{detail}</p> : null}
                   </div>
                 </div>
               );
@@ -89,8 +94,7 @@ export function TamperingPanel({ result }: { result: ResultView }) {
           />
         )}
       </div>
-
-      <p className="muted" style={{ fontSize: 12, marginTop: 14 }}>
+      <p className="report-note">
         Tampering detection is heuristic and best-effort. The absence of
         findings does not prove a document is authentic, and a failure to
         analyze is never treated as proof of tampering.

@@ -23,6 +23,7 @@ CertiGuard is an AI-assisted certificate analysis platform that examines uploade
 - [Repository Layout](#repository-layout)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
+- [Authentication (Clerk)](#authentication-clerk)
 - [API Reference](#api-reference)
 - [Data and Evaluation](#data-and-evaluation)
 - [Testing](#testing)
@@ -298,9 +299,42 @@ Configuration varies by environment. Review the current source and example envir
 - Database or persistence configuration.
 - Model and inference settings.
 - Issuer-verification settings.
+- Clerk authentication settings (see [Authentication (Clerk)](#authentication-clerk)).
 - External-service credentials, if applicable.
 
 A variable being set does not establish that its service is connected or working. Validate service health and responses before relying on it.
+
+## Authentication (Clerk)
+
+All private API endpoints and the entire frontend are protected by **Clerk**-issued session tokens.
+
+### Frontend
+
+- The browser loads Clerk via `@clerk/clerk-react` using `VITE_CLERK_PUBLISHABLE_KEY`.
+- Sign-in / sign-up are rendered with Clerk's prebuilt `<SignIn>` component using hash routing (`signInUrl="/sign-in"`, `signUpUrl="/sign-up"`); the "Create account" mode is driven by the URL hash so Clerk handles all flows (including password recovery) consistently.
+- `AuthSessionProvider` owns the session state machine. The app only considers the user signed in **after** a fresh session token has been minted with `getToken()` (with retry) and handed to the `api` client; then the token is re-minted every 60s. Until that happens the app shows a loading screen, and no protected request can fire without a token. This is what prevents the "dashboard flashes then bounces to login" race that occurred when first requests went out tokenless and their 401s signed out the brand-new session.
+- The token is kept in memory only — never written to `localStorage`.
+- The `api` client treats a backend `401` as "session expired" **only when an `Authorization` header was actually attached**. An anonymous 401 or a `403` never signs the user out, and the expired-handler fires at most once per session.
+- Clerk pending states use `treatPendingAsSignedOut: false` so a completing sign-up is not reported as signed out mid-flow.
+
+### Backend
+
+- Every route under documentation is owner-scoped. After a valid token is verified, the acting user is derived from the token's `sub` claim; owner identifiers are never accepted from the request body.
+- Verification uses the legitimate session-token flow via the `clerk-backend-api` package, with an explicit `iss` (issuer) check against `CLERK_ISSUER`. If `CLERK_ISSUER` is not configured, every request is rejected (there is no insecure fallback).
+- Legacy rows created before this feature have `user_id = NULL` and are invisible to every user. New rows are always bound to the acting user.
+
+### Required environment variables
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env` | Public Clerk SDK key. |
+| `CLERK_SECRET_KEY` | `backend/.env` | Backend-only secret for key material (`sk_...`). |
+| `CLERK_ISSUER` | `backend/.env` | Issuer: `https://<your-instance>.<clerk.accounts.dev>`. Authorization is refused when unset. |
+| `CLERK_AUTHORIZED_PARTIES` | `backend/.env` | Optional comma-separated allowed origins (e.g. `http://localhost:5173`). |
+| `CLERK_AUDIENCE` | `backend/.env` | Optional audience (`aud`) filter. |
+| `CLERK_JWT_KEY` / `CLERK_CLOCK_SKEW_MS` | `backend/.env` | Optional PEM public key / clock skew overrides. |
+
+Dashboard steps: enable the "session token" in **Sessions → Edit token customization**, copy `CLERK_ISSUER` from **API keys**, keep `CLERK_SECRET_KEY` server-side only, and list your SPA origin in **Allowed origins**. See `.env.example` for placeholders. Never commit real secrets.
 
 ## API Reference
 
@@ -376,17 +410,17 @@ pytest
 ```
 
 ```bash
-npx tsc --noEmit
+cd frontend && npx tsc --noEmit && npm run build
 ```
 
-Historical development reports described different test checkpoints, so those counts are intentionally not stated as current results here. A passing test suite does not independently establish real-world model accuracy, issuer confirmation, or production readiness.
+The current backend suite passes (`354 passed`), covering public endpoints, authentication/authorization failures, per-user ownership isolation, and the existing verification pipeline. A passing test suite does not independently establish real-world model accuracy, issuer confirmation, or production readiness.
 
 ## Security and Privacy
 
 Certificates can contain personal and confidential information. Before deploying CertiGuard:
 
-- Require authentication and authorization for protected operations.
-- Restrict access to uploaded files, verification history, and audit data.
+- Authentication and per-user ownership are enforced on every private endpoint; verify the running behavior before exposing the application.
+- Restrict access to uploaded files, verification history, and audit data to the owning user.
 - Keep secrets and credentials out of source control.
 - Do not publish private certificates or datasets without a lawful basis and appropriate safeguards.
 - Define retention and deletion policies for both files and database records.
@@ -395,7 +429,7 @@ Certificates can contain personal and confidential information. Before deploying
 - Review dependency security and deployment configuration.
 - Clearly communicate the limitations of automated results.
 
-An earlier architecture review identified access control as a deployment concern. Reassess the current implementation before exposing the application to untrusted users.
+An earlier architecture review identified access control as a deployment concern. Authentication (Clerk) and per-user ownership scoping were implemented; reassess the current configuration before exposing the application to untrusted users.
 
 ## Limitations
 
@@ -404,7 +438,7 @@ The following points were identified during development and should be checked ag
 - **Real-world evaluation:** Synthetic data and a small external PDF set are insufficient to establish broad generalization.
 - **Issuer integrations:** Issuer-side verification was not configured for known issuers in the documented state.
 - **Data pipeline validation:** Real-data ingestion requires testing with appropriately labeled documents and review of its outputs.
-- **Access control:** Authentication and authorization need to be verified before deployment.
+- **Access control:** Authentication and per-user ownership are implemented; verify the Clerk configuration, issuer setup, and legacy-data visibility before deployment.
 - **Data lifecycle:** Uploaded files and database records may have different retention behavior.
 - **Frontend experience:** Progress handling, cancellation, timeout behavior, and automated UI coverage were identified as improvement areas.
 - **Operational readiness:** CI, dependency alignment, configuration validation, and deployment documentation should be reviewed.

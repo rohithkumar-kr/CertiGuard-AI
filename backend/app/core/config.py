@@ -20,7 +20,7 @@ def _as_bool(value: str, default: bool = False) -> bool:
 class Settings:
     def __init__(self) -> None:
         self.base_dir = BASE_DIR
-        self.app_name = os.getenv("APP_NAME", "AI Certificate Verification System")
+        self.app_name = os.getenv("APP_NAME", "CertiGuard AI")
         self.app_env = os.getenv("APP_ENV", "development")
 
         self.host = os.getenv("BACKEND_HOST", "0.0.0.0")
@@ -75,6 +75,50 @@ class Settings:
         self.ocr_min_completeness = float(os.getenv("OCR_MIN_COMPLETENESS", "0.4"))
 
         self.debug = _as_bool(os.getenv("DEBUG"), self.app_env == "development")
+
+        # --- Clerk authentication (backend verification) ---
+        # Clerk Dashboard field mapping (copy the exact value shown):
+        #   "Frontend API URL"        -> CLERK_ISSUER  (the token's `iss` claim)
+        #   "Backend API URL"         -> used by the SDK to fetch JWKS when no
+        #                               CLERK_JWT_KEY is set (default
+        #                               https://api.clerk.com/v1/jwks)
+        #   "JWKS URL" / "JWKS key"   -> NOT configuration inputs; the SDK
+        #                               resolves keys itself. Do NOT paste the
+        #                               JWKS URL into CLERK_ISSUER.
+        # The secret key is used to fetch the signing JWKS from the Clerk
+        # Backend API when jwt_key is not supplied. The jwt_key is the PEM
+        # public key from the Clerk Dashboard (networkless verification).
+        # Never ship the secret key to the frontend; it belongs only here.
+        self.clerk_secret_key = os.getenv("CLERK_SECRET_KEY", "").strip() or None
+        self.clerk_jwt_key = os.getenv("CLERK_JWT_KEY", "").strip() or None
+        # Issuer URL: the Clerk Frontend API URL (e.g.
+        # https://<your-clerk-domain>.clerk.accounts.dev). The token's `iss`
+        # claim must equal this value EXACTLY and nothing else. Auth strips a
+        # trailing "/.well-known/jwks.json" defensively, but set the plain value.
+        self.clerk_issuer = os.getenv("CLERK_ISSUER", "").strip() or None
+        # True when the configured issuer is actually the JWKS URL — a common
+        # Dashboard copy-paste mistake worth flagging loudly at startup.
+        self.clerk_issuer_is_jwks_url = bool(
+            self.clerk_issuer
+            and (
+                self.clerk_issuer.lower().endswith("/.well-known/jwks.json")
+                or self.clerk_issuer.lower().endswith("/jwks.json")
+                or self.clerk_issuer.lower().endswith("/.well-known/jwks")
+            )
+        )
+        # Developer diagnostics: when enabled, an issuer mismatch logs the
+        # received token's `iss` claim (a public URL — never the JWT). Off by
+        # default. Enable via CLERK_DEBUG_ISSUER=1.
+        self.clerk_debug_issuer = _as_bool(os.getenv("CLERK_DEBUG_ISSUER"), False)
+        # Allow-list of authorized parties validated against the token's `azp`
+        # claim (comma-separated). Clerk's default azp is the publishable key;
+        # after configuring authorized parties in the Dashboard use those.
+        self.clerk_authorized_parties = [
+            p.strip() for p in os.getenv("CLERK_AUTHORIZED_PARTIES", "").split(",")
+            if p.strip()
+        ] or None
+        self.clerk_audience = os.getenv("CLERK_AUDIENCE", "").strip() or None
+        self.clerk_clock_skew_ms = int(os.getenv("CLERK_CLOCK_SKEW_MS", "5000"))
 
         # --- Phase 12: external verification (off by default) ---
         # When enabled, QR/issuer URLs may be contacted. Never enabled in

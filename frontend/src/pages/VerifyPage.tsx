@@ -63,9 +63,11 @@ export function VerifyPage() {
   let view: ResultView | null = null;
   let raw: unknown = result;
   if (result) {
+    const normalized = normalizeResult(result);
     view = {
-      ...normalizeResult(result),
-      evidenceDetails: detail?.evidence_details,
+      ...normalized,
+      filename: detail?.filename ?? file?.name ?? normalized.filename,
+      evidenceDetails: detail?.evidence_details ?? normalized.evidenceDetails,
     };
     if (detail) raw = detail;
   }
@@ -134,37 +136,27 @@ export function VerifyPage() {
 
       {phase === "result" && result && view ? (
         <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
-              marginBottom: 18,
-            }}
-          >
-            <div>
-              <h2 style={{ fontSize: 17, fontWeight: 700 }}>Analysis complete</h2>
-              <p className="muted" style={{ fontSize: 13 }}>
-                Case {result.verification_id} · every value below comes from the
-                verification backend.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link to={`/investigations/${result.verification_id}`} className="btn btn--ghost">
-                Open investigation
-              </Link>
-              <button type="button" className="btn btn--primary" onClick={handleReset}>
-                Verify another
-              </button>
-            </div>
-          </div>
-
           <VerificationPipeline status="success" ariaMessage="Analysis complete." />
-
-          <div style={{ marginTop: 20 }}>
-            <ResultWorkspace result={view} previewUrl={previewUrl} raw={raw} />
+          <div className="result-report__entry">
+            <ResultWorkspace
+              result={view}
+              previewUrl={previewUrl}
+              mediaType={file?.type ?? null}
+              raw={raw}
+              actions={
+                <>
+                  <Link
+                    to={`/investigations/${result.verification_id}`}
+                    className="btn btn--ghost"
+                  >
+                    Open investigation
+                  </Link>
+                  <button type="button" className="btn btn--primary" onClick={handleReset}>
+                    Verify another
+                  </button>
+                </>
+              }
+            />
           </div>
         </div>
       ) : null}

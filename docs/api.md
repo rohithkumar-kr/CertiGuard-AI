@@ -14,7 +14,7 @@ Server and model availability.
 ```json
 {
   "status": "ok",
-  "app": "AI Certificate Verification System",
+  "app": "CertiGuard AI",
   "model_version": "random_forest_v3",
   "model_loaded": true
 }

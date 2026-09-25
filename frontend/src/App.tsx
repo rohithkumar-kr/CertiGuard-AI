@@ -1,4 +1,8 @@
-import { Router } from "./router/Router";
+import { ClerkRoot, LoadingScreen } from "./auth/AuthProvider";
+import { AuthSessionProvider, useAuthSession } from "./auth/AuthSession";
+import { AuthScreen } from "./auth/AuthScreen";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
+import { Router, useRouter } from "./router/Router";
 import { AppShell } from "./components/layout/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
 import { VerifyPage } from "./pages/VerifyPage";
@@ -29,14 +33,51 @@ function NotFound() {
   );
 }
 
-function App() {
+function RedirectingNotice() {
+  return (
+    <div className="card">
+      <div className="state" role="status">
+        <div className="state__icon">
+          <span className="spinner" aria-hidden="true" />
+        </div>
+        <div>
+          <p className="state__title">Redirecting you securely…</p>
+          <p className="state__message">
+            CertiGuard AI is completing the authentication flow.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RouterFallback() {
+  const { path } = useRouter();
+  // While an authentication flow completes, the hash briefly holds Clerk
+  // internal paths (sign-in/sign-up sub-routes, OAuth callbacks). Those are
+  // transient, not broken links — show a subtle notice instead of "not found".
+  const transient =
+    path === "/sign-in" ||
+    path === "/sign-up" ||
+    path.startsWith("/sign-in/") ||
+    path.startsWith("/sign-up/") ||
+    path.startsWith("/oauth") ||
+    path.startsWith("/sso");
+
+  if (transient) {
+    return <RedirectingNotice />;
+  }
+  return (
+    <AppShell pageTitle="Not found">
+      <NotFound />
+    </AppShell>
+  );
+}
+
+function ProtectedApp() {
   return (
     <Router
-      fallback={
-        <AppShell pageTitle="Not found">
-          <NotFound />
-        </AppShell>
-      }
+      fallback={<RouterFallback />}
       routes={[
         {
           path: "/",
@@ -88,6 +129,43 @@ function App() {
         },
       ]}
     />
+  );
+}
+
+/**
+ * AuthGate — the single rendering decision point.
+ *
+ * Status is owned by AuthSessionProvider, which only reports "ready" once a
+ * fresh Clerk session token has actually been minted and handed to the api
+ * client. This closes the flicker bug: until then the protected app is not
+ * mounted at all, so no request can fire without a token and no 401 can
+ * bounce the app back to the sign-in screen.
+ */
+function AuthGate() {
+  const { status, notice, clearNotice } = useAuthSession();
+
+  if (status === "loading") {
+    return <LoadingScreen notice={notice} />;
+  }
+
+  if (status === "signed-out") {
+    return <AuthScreen notice={notice} onDismiss={clearNotice} />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <ProtectedApp />
+    </ErrorBoundary>
+  );
+}
+
+function App() {
+  return (
+    <ClerkRoot>
+      <AuthSessionProvider>
+        <AuthGate />
+      </AuthSessionProvider>
+    </ClerkRoot>
   );
 }
 

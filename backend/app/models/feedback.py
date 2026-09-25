@@ -38,6 +38,10 @@ class VerificationFeedback(Base):
     verification_id = Column(
         String, index=True, nullable=False
     )
+    # Clerk user id that owns the verification this feedback refers to. Used to
+    # scope feedback queries to a user and to enforce ownership at the API
+    # layer. Null only ever appears for rows created by buggy pre-auth code.
+    user_id = Column(String, index=True, nullable=True)
     reviewer_label = Column(String, nullable=False, index=True)
     reviewer_note = Column(Text, nullable=True)
     reviewed_at = Column(DateTime, default=utc_now, index=True)

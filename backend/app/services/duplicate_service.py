@@ -57,11 +57,23 @@ def identity_fingerprint(fields: dict) -> str | None:
 _FP_ORDER = ("file", "cert_id", "identity")
 
 
-def _match_prior(db: Session, fingerprints: dict, exclude_id: int | None = None):
-    """Return (duplicate_of_verification_id, duplicate_type) or (None, None)."""
+def _match_prior(
+    db: Session,
+    fingerprints: dict,
+    exclude_id: int | None = None,
+    user_id: str | None = None,
+):
+    """Return (duplicate_of_verification_id, duplicate_type) or (None, None).
+
+    Scoped to ``user_id`` so duplicate signals only ever reference the acting
+    user's own verifications (legacy pre-auth rows with NULL user_id are never
+    matched, and no cross-user leakage happens).
+    """
     query = db.query(Verification).filter(
         Verification.prediction != "error",
     )
+    if user_id is not None:
+        query = query.filter(Verification.user_id == user_id)
     rows = query.all()
     for fp_type in _FP_ORDER:
         fp_value = fingerprints.get(fp_type)
@@ -76,9 +88,14 @@ def _match_prior(db: Session, fingerprints: dict, exclude_id: int | None = None)
     return None, None
 
 
-def find_duplicate(db: Session, content: bytes, fields: dict,
-                   exclude_id: int | None = None) -> dict:
-    """Check a new verification against prior verifications.
+def find_duplicate(
+    db: Session,
+    content: bytes,
+    fields: dict,
+    exclude_id: int | None = None,
+    user_id: str | None = None,
+) -> dict:
+    """Check a new verification against the acting user's prior verifications.
 
     Returns:
       {"is_duplicate": bool,
@@ -90,7 +107,7 @@ def find_duplicate(db: Session, content: bytes, fields: dict,
         "cert_id": cert_id_fingerprint(fields.get("cert_id")),
         "identity": identity_fingerprint(fields),
     }
-    duplicate_of, duplicate_type = _match_prior(db, fingerprints, exclude_id)
+    duplicate_of, duplicate_type = _match_prior(db, fingerprints, exclude_id, user_id)
     return {
         "is_duplicate": duplicate_of is not None,
         "duplicate_of": duplicate_of,

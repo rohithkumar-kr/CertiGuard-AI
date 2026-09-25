@@ -22,5 +22,9 @@ onnxruntime>=1.20.0
 # --- Phase 12 evidence engine (QR decoding; optional, degrades gracefully) ---
 opencv-python-headless>=4.10.0
 
+# --- Clerk authentication (remote JWKS/key fetching via the Backend API) ---
+clerk-backend-api>=7.0.0
+PyJWT[crypto]>=2.8.0
+
 pytest>=9.0.0
 httpx>=0.28.0

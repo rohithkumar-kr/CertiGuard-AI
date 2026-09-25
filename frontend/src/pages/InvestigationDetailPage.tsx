@@ -8,6 +8,7 @@ import { normalizeResult, type ResultView } from "../utils/result";
 import { KeyValue, KeyValueGrid, StatusBadge, RiskMeter } from "../components/ui/DataDisplay";
 import { EmptyState, LoadingState } from "../components/ui/Feedback";
 import { EvidenceSummary } from "../components/result/EvidenceSummary";
+import { EvidenceFindings } from "../components/result/EvidenceFindings";
 import { ForensicsView } from "../components/result/ForensicsView";
 import { IssuerPanel } from "../components/result/IssuerPanel";
 import { TamperingPanel } from "../components/result/TamperingPanel";
@@ -202,7 +203,10 @@ export function InvestigationDetailPage() {
         ) : null}
 
         {activeTab === "evidence" ? (
-          <EvidenceSummary result={view} />
+          <div className="grid" style={{ gap: 18 }}>
+            <EvidenceSummary result={view} />
+            <EvidenceFindings result={view} />
+          </div>
         ) : null}
 
         {activeTab === "forensics" ? (

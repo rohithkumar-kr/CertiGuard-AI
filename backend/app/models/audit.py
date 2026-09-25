@@ -26,6 +26,9 @@ class AuditEvent(Base):
 
     id = Column(Integer, primary_key=True)
     verification_id = Column(String, index=True, nullable=False)
+    # Clerk user id that owns the verification these audit events belong to.
+    # Scopes audit queries to a user; null only for legacy rows.
+    user_id = Column(String, index=True, nullable=True)
     # Stable event-type code (e.g. "ML_ANALYSIS"); see audit_service.EVENT_*.
     event_type = Column(String, index=True, nullable=False)
     # Coarse processing phase for grouping (ingestion / extraction / analysis /

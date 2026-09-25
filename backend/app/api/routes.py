@@ -1,12 +1,15 @@
 """API routes for the certificate verification system.
 
 Endpoints:
-  GET  /api/health
-  GET  /api/model/info
-  POST /api/verify
-  GET  /api/verifications
-  GET  /api/verifications/summary
-  GET  /api/metrics
+  GET  /api/health          public
+  GET  /api/model/info      public
+  POST /api/verify          protected
+  GET  /api/verifications   protected
+  GET  /api/verifications/summary  protected
+  GET  /api/metrics         protected
+  ...
+All protected routes require a valid Clerk session token via the
+``get_current_user`` dependency and are scoped to the acting user.
 """
 
 import json
@@ -18,6 +21,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.auth import AuthenticatedUser, get_current_user
 from app.core.config import settings
 from app.core.errors import AppError, ModelUnavailableError
 from app.core.logging import get_logger
@@ -72,7 +76,11 @@ def model_info():
 
 
 @router.post("/verify", response_model=VerificationResponse)
-async def verify(files: list[UploadFile] = File(..., alias="file"), db: Session = Depends(get_db)):
+async def verify(
+    files: list[UploadFile] = File(..., alias="file"),
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     if len(files) != 1:
         raise AppError(message="Exactly one file must be uploaded.")
     file = files[0]
@@ -85,12 +93,15 @@ async def verify(files: list[UploadFile] = File(..., alias="file"), db: Session 
         content = await file.read()
         logger.info("Received file=%s size=%d", file.filename or "(no name)", len(content))
         vid = new_verification_id()
-        result = verify_document(file.filename or "", content, db, verification_id=vid)
+        result = verify_document(
+            file.filename or "", content, db,
+            verification_id=vid, user_id=current_user.id,
+        )
         logger.info("Verification ok in %.1f ms", (time.perf_counter() - started) * 1000)
         return VerificationResponse(**result)
     except AppError as exc:
         db.rollback()
-        record_error(db, file.filename, exc, verification_id=vid)
+        record_error(db, file.filename, exc, verification_id=vid, user_id=current_user.id)
         raise
     except Exception as exc:  # noqa: BLE001 - unexpected errors surface as 500, never tracebacks
         db.rollback()
@@ -123,8 +134,9 @@ def list_verifications(
     risk_min: float = Query(None, ge=0.0, le=1.0),
     risk_max: float = Query(None, ge=0.0, le=1.0),
     db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
-    query = db.query(Verification)
+    query = db.query(Verification).filter(Verification.user_id == current_user.id)
     if prediction:
         query = query.filter(Verification.prediction == prediction)
     if review_status:
@@ -153,7 +165,7 @@ def list_verifications(
         rows = [r for r in rows if _record_has_cert_type(r, certificate_type)]
 
     rows.sort(key=lambda r: (r.created_at or r.id), reverse=(sort == "newest"))
-    feedback = _feedback_map(db)
+    feedback = _feedback_map(db, current_user.id)
     return [_enrich_record(r, feedback.get(r.verification_id)) for r in rows[:limit]]
 
 
@@ -169,8 +181,9 @@ def verifications_summary(
     risk_min: float = Query(None, ge=0.0, le=1.0),
     risk_max: float = Query(None, ge=0.0, le=1.0),
     db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
-    query = db.query(Verification)
+    query = db.query(Verification).filter(Verification.user_id == current_user.id)
     if prediction:
         query = query.filter(Verification.prediction == prediction)
     if review_status:
@@ -221,9 +234,12 @@ def _record_has_cert_type(record: Verification, cert_type: str) -> bool:
     return bool(flags.get(cert_type))
 
 
-def _feedback_map(db: Session) -> dict[str, VerificationFeedback]:
-    """Map verification_id -> feedback for all feedback rows in one query."""
-    rows = db.query(VerificationFeedback).all()
+def _feedback_map(db: Session, user_id: str | None = None) -> dict[str, VerificationFeedback]:
+    """Map verification_id -> feedback for the user's feedback rows (one query)."""
+    query = db.query(VerificationFeedback)
+    if user_id is not None:
+        query = query.filter(VerificationFeedback.user_id == user_id)
+    rows = query.all()
     return {r.verification_id: r for r in rows}
 
 
@@ -280,8 +296,11 @@ def _extraction_completeness(record: Verification) -> float:
 
 
 @router.get("/metrics", response_model=MetricsResponse)
-def metrics(db: Session = Depends(get_db)):
-    rows = db.query(Verification).all()
+def metrics(
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    rows = db.query(Verification).filter(Verification.user_id == current_user.id).all()
     successful = [r for r in rows if r.prediction != "error"]
     prediction_distribution = dict(Counter(r.prediction for r in successful))
     model_versions = dict(Counter(r.model_version for r in rows))
@@ -327,7 +346,8 @@ def metrics(db: Session = Depends(get_db)):
 
 
 def record_error(db: Session, filename: str | None, exc: AppError,
-                 verification_id: str | None = None) -> None:
+                 verification_id: str | None = None,
+                 user_id: str | None = None) -> None:
     """Persist a failed verification so monitoring shows errors.
 
     ``verification_id`` is the id that the verification attempt was started
@@ -338,6 +358,7 @@ def record_error(db: Session, filename: str | None, exc: AppError,
         vid = verification_id or f"V-ERR-{abs(hash((filename, exc.message))) % 10**6}"
         verification = Verification(
             verification_id=vid,
+            user_id=user_id,
             filename=filename,
             prediction="error",
             label="ERROR",
@@ -348,19 +369,21 @@ def record_error(db: Session, filename: str | None, exc: AppError,
         )
         db.add(verification)
         db.commit()
-        _record_failure_event(db, vid, exc)
+        _record_failure_event(db, vid, exc, user_id)
     except Exception:  # noqa: BLE001 - never let error logging break the response
         db.rollback()
         logger.exception("Could not record failed verification")
 
 
-def _record_failure_event(db: Session, vid: str, exc: AppError) -> None:
+def _record_failure_event(db: Session, vid: str, exc: AppError,
+                          user_id: str | None = None) -> None:
     """Append the failure event for a failed verification (best-effort)."""
     try:
         started = audit_service.event_count(db, vid) > 0
         audit_service.record_event(
             db,
             verification_id=vid,
+            user_id=user_id,
             event_type=audit_service.EVENT_PIPELINE_FAILED,
             stage="failure",
             status=audit_service.STATUS_FAILED,
@@ -422,11 +445,21 @@ def _parse_evidence_json(record: Verification) -> dict:
 
 
 @router.get("/verifications/{verification_id}", response_model=VerificationDetailResponse)
-def verification_detail(verification_id: str, db: Session = Depends(get_db)):
-    """Full detail for a single verification (reviewer workflow, 9H)."""
+def verification_detail(
+    verification_id: str,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """Full detail for a single verification (reviewer workflow, 9H).
+
+    Ownership is derived from the verified token; a verification owned by
+    another user is reported with the same not-found response as an id that
+    does not exist, so the response never reveals whether it exists.
+    """
     record = (
         db.query(Verification)
         .filter(Verification.verification_id == verification_id)
+        .filter(Verification.user_id == current_user.id)
         .first()
     )
     if record is None:
@@ -435,6 +468,7 @@ def verification_detail(verification_id: str, db: Session = Depends(get_db)):
     feedback = (
         db.query(VerificationFeedback)
         .filter(VerificationFeedback.verification_id == verification_id)
+        .filter(VerificationFeedback.user_id == current_user.id)
         .first()
     )
     snapshot = _parse_intelligence_json(record)
@@ -491,20 +525,28 @@ def verification_detail(verification_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/verifications/{verification_id}/audit", response_model=AuditTrailResponse)
-def verification_audit(verification_id: str, db: Session = Depends(get_db)):
+def verification_audit(
+    verification_id: str,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
     """Append-only audit trail / investigation timeline for a verification.
 
     Returns the chronological events (oldest first). An empty list is a valid
-    result for a verification that predates audit recording.
+    result for a verification that predates audit recording. Another user's
+    verification_id reports the same not-found response as an unknown id.
     """
     record = (
         db.query(Verification)
         .filter(Verification.verification_id == verification_id)
+        .filter(Verification.user_id == current_user.id)
         .first()
     )
     if record is None:
         raise AppError("Verification not found.")
-    events = audit_service.list_audit_events(db, verification_id)
+    events = audit_service.list_audit_events(
+        db, verification_id, user_id=current_user.id
+    )
     return AuditTrailResponse(
         verification_id=verification_id,
         events=[AuditEvent(**audit_service.serialize_event(e)) for e in events],
@@ -516,25 +558,43 @@ def submit_feedback(
     verification_id: str,
     payload: FeedbackCreate,
     db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Record a human-review decision for a verification (9B).
 
     Human feedback NEVER modifies the ML model, the prediction, or the risk
     score. One decision per verification; duplicate submissions are rejected.
+    Ownership is enforced from the verified token: a verification owned by
+    another user is rejected as not found.
     """
+    owned = (
+        db.query(Verification)
+        .filter(Verification.verification_id == verification_id)
+        .filter(Verification.user_id == current_user.id)
+        .first()
+    )
+    if owned is None:
+        raise AppError("Verification not found.")
     feedback = record_feedback(
-        db, verification_id, payload.reviewer_label, payload.reviewer_note
+        db, verification_id, payload.reviewer_label, payload.reviewer_note,
+        user_id=current_user.id,
     )
     return FeedbackResponse.model_validate(feedback)
 
 
 @router.get("/feedback/summary", response_model=FeedbackSummaryResponse)
-def feedback_summary_endpoint(db: Session = Depends(get_db)):
-    """Summary counts over the reviewer feedback collection (9B)."""
-    return FeedbackSummaryResponse(**feedback_summary(db))
+def feedback_summary_endpoint(
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """Summary counts over the reviewer feedback collection (9B), scoped to the user."""
+    return FeedbackSummaryResponse(**feedback_summary(db, user_id=current_user.id))
 
 
 @router.get("/feedback/analytics", response_model=FeedbackAnalyticsResponse)
-def feedback_analytics_endpoint(db: Session = Depends(get_db)):
-    """Monitoring view over reviewed certificates (9I)."""
-    return FeedbackAnalyticsResponse(**feedback_analytics(db))
+def feedback_analytics_endpoint(
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """Monitoring view over reviewed certificates (9I), scoped to the user."""
+    return FeedbackAnalyticsResponse(**feedback_analytics(db, user_id=current_user.id))

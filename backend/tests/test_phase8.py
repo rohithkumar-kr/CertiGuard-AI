@@ -208,12 +208,14 @@ def test_history_review_status_filter(client, genuine_pdf, suspicious_pdf, db_se
     from datetime import datetime
 
     from app.models.verification import Verification
+    from tests.conftest import TEST_USER_A
 
     _verify(client, "rev_high.pdf", suspicious_pdf)
     # Seed a low_risk record directly so the filter is exercised regardless of
     # the model's risk band for the synthetic fixtures.
     low = Verification(
         verification_id="V-TEST-LOW1",
+        user_id=TEST_USER_A,
         filename="rev_low_seeded.pdf",
         prediction="genuine",
         label="GENUINE",

@@ -18,6 +18,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 _LIGHTWEIGHT_MIGRATIONS = {
     "verifications": {
+        # --- Phase 1: per-user ownership (Clerk auth) ---
+        "user_id": "ALTER TABLE verifications ADD COLUMN user_id TEXT",
         "certificate_type": "ALTER TABLE verifications ADD COLUMN certificate_type TEXT",
         "review_status": "ALTER TABLE verifications ADD COLUMN review_status TEXT",
         "issuer": "ALTER TABLE verifications ADD COLUMN issuer TEXT",
@@ -36,7 +38,18 @@ _LIGHTWEIGHT_MIGRATIONS = {
         # --- Phase 12 evidence engine ---
         "evidence_json": "ALTER TABLE verifications ADD COLUMN evidence_json TEXT",
     },
+    # --- Phase 1: per-user ownership (Clerk auth) ---
+    # audit_events and certificates may not exist yet in legacy DBs; they are
+    # created (with user_id) by create_all before these run.
+    "audit_events": {
+        "user_id": "ALTER TABLE audit_events ADD COLUMN user_id TEXT",
+    },
+    "certificates": {
+        "user_id": "ALTER TABLE certificates ADD COLUMN user_id TEXT",
+    },
     "verification_feedback": {
+        # --- Phase 1: per-user ownership (Clerk auth) ---
+        "user_id": "ALTER TABLE verification_feedback ADD COLUMN user_id TEXT",
         # --- Phase 12 evidence-engine snapshot on feedback rows ---
         "final_assessment": "ALTER TABLE verification_feedback ADD COLUMN final_assessment TEXT",
         "anomaly_score": "ALTER TABLE verification_feedback ADD COLUMN anomaly_score FLOAT",
@@ -65,6 +78,11 @@ _INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS ix_audit_events_verification_id ON audit_events (verification_id)",
     "CREATE INDEX IF NOT EXISTS ix_audit_events_created_at ON audit_events (created_at)",
     "CREATE INDEX IF NOT EXISTS ix_audit_events_event_type ON audit_events (event_type)",
+    # --- Phase 1: per-user ownership indexes ---
+    "CREATE INDEX IF NOT EXISTS ix_verifications_user_id ON verifications (user_id)",
+    "CREATE INDEX IF NOT EXISTS ix_verification_feedback_user_id ON verification_feedback (user_id)",
+    "CREATE INDEX IF NOT EXISTS ix_audit_events_user_id ON audit_events (user_id)",
+    "CREATE INDEX IF NOT EXISTS ix_certificates_user_id ON certificates (user_id)",
 ]
 
 

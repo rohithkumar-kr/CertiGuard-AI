@@ -1,0 +1,380 @@
+/* ============================================================
+   Authentication screens
+   CertiGuard AI
+   ============================================================ */
+
+.auth-screen {
+  --auth-accent: var(--accent);
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  min-height: 100dvh;
+  padding: 28px 18px;
+  background:
+    radial-gradient(900px 480px at 85% -10%, rgba(37, 99, 235, 0.12), transparent 60%),
+    radial-gradient(700px 400px at -10% 20%, rgba(14, 165, 233, 0.08), transparent 55%),
+    var(--bg-base);
+}
+
+/* Centered single-card screens (loading / misconfigured) */
+.auth-screen__card {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 26px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+}
+
+.auth-screen__card--centered {
+  text-align: center;
+}
+
+.auth-screen__card--centered .auth-brand {
+  align-items: center;
+}
+
+.auth-screen__card--centered .auth-screen__notice {
+  justify-content: center;
+}
+
+/* ---------------- Split layout (sign in / sign up) ---------------- */
+
+.auth-screen--split {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  place-items: stretch;
+  padding: 0;
+}
+
+.auth-screen__panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 56px clamp(32px, 6vw, 84px);
+  background:
+    radial-gradient(720px 420px at 20% 0%, rgba(14, 165, 233, 0.14), transparent 60%),
+    radial-gradient(620px 360px at 100% 100%, rgba(37, 99, 235, 0.12), transparent 55%),
+    var(--bg-elevated);
+  border-right: 1px solid var(--border);
+}
+
+.auth-screen__form {
+  display: grid;
+  place-items: center;
+  padding: 56px clamp(22px, 5vw, 64px);
+  overflow-y: auto;
+}
+
+.auth-screen--split .auth-screen__card {
+  width: 100%;
+  max-width: 460px;
+  gap: 18px;
+  padding: 30px 32px 28px;
+}
+
+/* ---------------- Brand block ---------------- */
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-brand__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius);
+  color: #fff;
+  background: var(--brand-gradient);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35);
+}
+
+.auth-brand__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.auth-brand__name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.auth-brand__sub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* ---------------- Left panel copy ---------------- */
+
+.auth-panel__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-panel__title {
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  max-width: 18ch;
+}
+
+.auth-panel__lead {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 48ch;
+}
+
+.auth-points {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-points__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.auth-points__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.auth-points__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.auth-points__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.auth-points__body {
+  display: block;
+  margin-top: 2px;
+  max-width: 42ch;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.auth-panel__note {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* ---------------- Notice ---------------- */
+
+.auth-screen__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--amber-soft);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  color: var(--amber);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.auth-screen__notice .spinner {
+  border-color: rgba(251, 191, 36, 0.3);
+  border-top-color: var(--amber);
+}
+
+.auth-screen__notice-dismiss {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: var(--amber);
+  cursor: pointer;
+}
+
+.auth-screen__notice-dismiss svg {
+  width: 13px;
+  height: 13px;
+}
+
+.auth-screen__notice-dismiss:hover {
+  background: rgba(251, 191, 36, 0.15);
+}
+
+/* ---------------- Card mobile brand ---------------- */
+
+.auth-screen__card-mobile-brand {
+  display: none;
+}
+
+/* ---------------- Auth tabs (segmented control) ---------------- */
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+}
+
+.auth-tabs__tab {
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+
+.auth-tabs__tab:hover {
+  color: var(--text-primary);
+}
+
+.auth-tabs__tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.auth-tabs__tab--active {
+  background: var(--bg-surface-3);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------------- Card body & footnote ---------------- */
+
+/* The Clerk card is transparent now, so the body simply lets the Clerk
+   component flow inside our framed card at full width. */
+.auth-screen__body {
+  min-height: 0;
+}
+
+.auth-screen__body > div {
+  width: 100%;
+}
+
+.auth-screen__footnote {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 1024px) {
+  .auth-screen--split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .auth-screen__panel {
+    padding: 44px clamp(28px, 4vw, 48px);
+  }
+
+  .auth-screen__form {
+    padding: 44px clamp(22px, 4vw, 40px);
+  }
+}
+
+@media (max-width: 860px) {
+  .auth-screen--split {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-screen__panel {
+    display: none;
+  }
+
+  .auth-screen__form {
+    padding: 32px 18px;
+    min-height: 100dvh;
+  }
+
+  .auth-screen--split .auth-screen__card {
+    max-width: 440px;
+    padding: 26px 24px 24px;
+  }
+
+  .auth-screen__card-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 2px;
+  }
+
+  .auth-screen__card-mobile-brand .auth-brand__icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .auth-screen__card-mobile-brand .auth-brand__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .auth-screen__card-mobile-brand .auth-brand__name {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+}
+
+/* Short viewports: keep the form scrollable instead of overflowing/clipping. */
+@media (max-height: 700px) {
+  .auth-screen--split .auth-screen__panel {
+    padding-top: 32px;
+    padding-bottom: 32px;
+    gap: 22px;
+  }
+
+  .auth-screen--split .auth-screen__form {
+    align-items: start;
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .auth-screen__card {
+    gap: 14px;
+  }
+
+  .auth-points__item {
+    gap: 10px;
+  }
+}

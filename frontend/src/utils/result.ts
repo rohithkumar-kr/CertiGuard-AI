@@ -6,6 +6,7 @@ import type {
   Intelligence,
   IssuerVerification,
   OodStatus,
+  RecommendedAction,
   ReviewPriority,
   ReviewStatus,
   VerificationDetail,
@@ -34,6 +35,7 @@ export interface ResultView {
   oodStatus: OodStatus | null;
   reviewPriority: ReviewPriority | null;
   message: string;
+  recommendedAction?: RecommendedAction;
   warnings: string[];
   intelligence: Intelligence;
   positiveSignals: ExplanationSignal[];
@@ -69,6 +71,7 @@ export function normalizeResult(data: RawResult): ResultView {
     oodStatus: data.ood_status ?? null,
     reviewPriority: data.review_priority ?? null,
     message: "message" in data ? data.message : "",
+    recommendedAction: "recommended_action" in data ? data.recommended_action : undefined,
     warnings: "warnings" in data ? data.warnings ?? [] : [],
     intelligence: data.intelligence ?? {},
     positiveSignals: data.positive_signals ?? [],

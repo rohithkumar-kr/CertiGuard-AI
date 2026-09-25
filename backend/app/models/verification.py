@@ -9,6 +9,10 @@ class Verification(Base):
     __tablename__ = "verifications"
     id = Column(Integer, primary_key=True)
     verification_id = Column(String, unique=True, index=True, nullable=False)
+    # Clerk user id (sub claim) that owns this verification. Null for legacy
+    # records created before authentication existed; those rows are never
+    # exposed to any user via owner-scoped queries.
+    user_id = Column(String, index=True, nullable=True)
     certificate_id = Column(Integer, ForeignKey("certificates.id"), nullable=True)
     filename = Column(String, nullable=True)
     prediction = Column(String, nullable=False)

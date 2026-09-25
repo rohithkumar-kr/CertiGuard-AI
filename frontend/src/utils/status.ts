@@ -69,6 +69,13 @@ export function evidenceToCaseStatus(
   return assessmentToCaseStatus(evidence.assessment);
 }
 
+export function resultToCaseStatus(result: {
+  evidence?: VerificationEvidence | null;
+  prediction: string;
+}): CaseStatus | null {
+  return evidenceToCaseStatus(result.evidence) ?? predictionToCaseStatus(result.prediction);
+}
+
 export function predictionToCaseStatus(
   prediction: Prediction | string | null | undefined,
 ): CaseStatus | null {
@@ -126,12 +133,28 @@ export const EVIDENCE_CATEGORY_LABELS: Record<string, string> = {
   CONSISTENCY: "Identity Consistency",
   VISUAL: "Visual Analysis",
   TAMPERING: "Tampering Analysis",
-  QR: "QR / Verification Code",
+  QR: "QR Analysis",
   ISSUER: "Issuer Verification",
   ANOMALY: "Anomaly Detection",
   DUPLICATE: "Duplicate Detection",
-  EXTERNAL: "External Verification",
+  VERIFICATION_CODE: "Verification Code",
   FORENSICS: "Document Forensics",
+};
+
+export const EVIDENCE_CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  ML: "ML classifier risk assessment.",
+  EXTRACTION: "Document text extraction reliability.",
+  STRUCTURE: "Certificate document structure.",
+  SEMANTICS: "Content plausibility and out-of-distribution checks.",
+  CONSISTENCY: "Identity and field consistency checks.",
+  VISUAL: "Rendered document visual analysis.",
+  TAMPERING: "Visual tampering detection.",
+  QR: "QR code presence and verification-page checks.",
+  ISSUER: "Issuer registry and domain verification.",
+  ANOMALY: "Aggregate anomaly scoring.",
+  DUPLICATE: "Reuse against prior verifications.",
+  VERIFICATION_CODE: "Verification-code presence and state.",
+  FORENSICS: "PDF structural forensics.",
 };
 
 export const SEVERITY_LABELS: Record<string, string> = {
@@ -143,4 +166,8 @@ export const SEVERITY_LABELS: Record<string, string> = {
 
 export function evidenceCategoryLabel(category: string): string {
   return EVIDENCE_CATEGORY_LABELS[category] ?? category;
+}
+
+export function evidenceCategoryDescription(category: string): string {
+  return EVIDENCE_CATEGORY_DESCRIPTIONS[category] ?? "Evidence source reported by the verification backend.";
 }

@@ -22,8 +22,42 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.core.config import settings  # noqa: E402
+from app.core.auth import AuthenticatedUser, get_current_user  # noqa: E402
 from app.database.database import SessionLocal, get_db  # noqa: E402
 from app.main import app  # noqa: E402
+
+# Test identities. Existing API tests run as TEST_USER_A through a dependency
+# override; the strict auth tests in test_auth.py drop that override to exercise
+# the real get_current_user dependency with a mocked token verifier.
+TEST_USER_A = "user_test_a"
+TEST_USER_B = "user_test_b"
+
+
+def _test_user(user_id: str) -> AuthenticatedUser:
+    return AuthenticatedUser(id=user_id)
+
+
+def _install_test_auth_override() -> None:
+    """Act as though the caller is TEST_USER_A (test-only seam)."""
+    app.dependency_overrides[get_current_user] = lambda: _test_user(TEST_USER_A)
+
+
+def _clear_auth_overrides() -> None:
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture(autouse=True)
+def auth_override():
+    """Run every test as an authenticated user by default.
+
+    Tests that need the REAL authentication dependency (test_auth.py) declare
+    a fixture that depends on this one and clears the override, so ordering is
+    deterministic. This override is test-only configuration of the app object;
+    production always verifies tokens via get_current_user.
+    """
+    _install_test_auth_override()
+    yield
+    _clear_auth_overrides()
 
 
 def _make_pdf(text: str) -> bytes:

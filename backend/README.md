@@ -183,7 +183,7 @@ See `backend/.env.example`:
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `APP_NAME` | App display name | AI Certificate Verification System |
+| `APP_NAME` | App display name | CertiGuard AI |
 | `APP_ENV` | `development` / `production` | development |
 | `CORS_ORIGINS` | comma-separated allowed origins | localhost:5173,8000 |
 | `DATABASE_URL` | SQLAlchemy DB URL | `sqlite:///./certificates.db` |

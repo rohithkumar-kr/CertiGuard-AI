@@ -2,7 +2,7 @@ import type { VerificationRecord } from "../../types";
 import { formatDateShort, formatPercent } from "../../utils/format";
 import { reviewStatusToCaseStatus } from "../../utils/status";
 import { StatusBadge } from "../ui/DataDisplay";
-import { EmptyState } from "../ui/Feedback";
+import { EmptyState, LoadingState } from "../ui/Feedback";
 import { Link } from "../../router/Router";
 
 function certTypeLabel(raw: string | null): string {
@@ -31,7 +31,7 @@ export function InvestigationTable({
   error: string | null;
 }) {
   if (loading) {
-    return <EmptyState compact icon="database" title="Loading investigations…" message="Fetching the latest cases from the verification backend." />;
+    return <LoadingState compact label="Loading investigations…" />;
   }
   if (error) {
     return (

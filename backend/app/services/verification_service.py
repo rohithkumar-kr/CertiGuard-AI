@@ -141,16 +141,18 @@ def _verification_code_severity(vc: dict | None) -> str:
     return audit_service.SEVERITY_WARNING  # VERIFICATION_UNAVAILABLE
 
 
-def _audit(db: Session, **kwargs) -> None:
-    """Record an audit event, never letting a recording failure break the run."""
+def _audit(db: Session, *, user_id: str | None, **kwargs) -> None:
+    """Record an audit event scoped to the owning user, never letting a
+    recording failure break the run."""
     try:
-        audit_service.record_event(db, **kwargs)
+        audit_service.record_event(db, user_id=user_id, **kwargs)
     except Exception:  # noqa: BLE001 - the audit trail is best-effort by design
         db.rollback()
         logger.warning("Audit event not recorded (%s)", kwargs.get("event_type"))
 
 
-def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -> None:
+def _record_evidence_events(db: Session, verification_id: str, evidence: dict,
+                            user_id: str | None) -> None:
     """Record the per-provider Phase 12 events from an executed evidence block.
 
     Every event is derived from the real, already-computed evidence output, so
@@ -167,6 +169,7 @@ def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -
         forensics_desc = f"Forensic inspection reported {len(anomalies)} anomaly/anomalies."
     _audit(
         db,
+        user_id=user_id,
         verification_id=verification_id,
         event_type=audit_service.EVENT_FORENSICS_ANALYSIS,
         stage="analysis",
@@ -191,6 +194,7 @@ def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -
     visual_error = bool(visual.get("error"))
     _audit(
         db,
+        user_id=user_id,
         verification_id=verification_id,
         event_type=audit_service.EVENT_VISUAL_ANALYSIS,
         stage="analysis",
@@ -217,6 +221,7 @@ def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -
     findings = tampering.get("findings") or []
     _audit(
         db,
+        user_id=user_id,
         verification_id=verification_id,
         event_type=audit_service.EVENT_TAMPERING_ANALYSIS,
         stage="analysis",
@@ -237,6 +242,7 @@ def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -
     checked = iv.get("checked_identifiers") or []
     _audit(
         db,
+        user_id=user_id,
         verification_id=verification_id,
         event_type=audit_service.EVENT_ISSUER_ANALYSIS,
         stage="analysis",
@@ -258,6 +264,7 @@ def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -
     vc = evidence.get("verification_codes") or {}
     _audit(
         db,
+        user_id=user_id,
         verification_id=verification_id,
         event_type=audit_service.EVENT_VERIFICATION_CODE_ANALYSIS,
         stage="analysis",
@@ -281,6 +288,7 @@ def _record_evidence_events(db: Session, verification_id: str, evidence: dict) -
     assessment = ve.get("assessment")
     _audit(
         db,
+        user_id=user_id,
         verification_id=verification_id,
         event_type=audit_service.EVENT_EVIDENCE_FUSION,
         stage="fusion",
@@ -334,6 +342,7 @@ def verify_document(
     content: bytes,
     db: Session,
     verification_id: str | None = None,
+    user_id: str | None = None,
 ) -> dict:
     """Verify a document and persist the result.
 
@@ -342,6 +351,10 @@ def verify_document(
     API generates one up front so error rows share the same id); otherwise a
     new id is generated here. The audit trail records each real step as it
     happens, so a later failure never erases what already occurred.
+
+    ``user_id`` is the Clerk user id that owns this verification. New rows are
+    always scoped to the acting user; legacy pre-auth rows keep NULL and are
+    never exposed through owner-scoped queries.
     """
     started = time.perf_counter()
     vid = verification_id or new_verification_id()
@@ -352,6 +365,7 @@ def verify_document(
 
     _audit(
         db,
+        user_id=user_id,
         verification_id=vid,
         event_type=audit_service.EVENT_DOCUMENT_RECEIVED,
         stage="ingestion",
@@ -369,6 +383,7 @@ def verify_document(
                     vid, len(extraction.text or ""))
         _audit(
             db,
+            user_id=user_id,
             verification_id=vid,
             event_type=audit_service.EVENT_TEXT_EXTRACTION,
             stage="extraction",
@@ -393,6 +408,7 @@ def verify_document(
     features = build_features_from_extraction(extraction)
     _audit(
         db,
+        user_id=user_id,
         verification_id=vid,
         event_type=audit_service.EVENT_FEATURE_EXTRACTION,
         stage="feature_extraction",
@@ -414,6 +430,7 @@ def verify_document(
 
     _audit(
         db,
+        user_id=user_id,
         verification_id=vid,
         event_type=audit_service.EVENT_ML_ANALYSIS,
         stage="ml_analysis",
@@ -450,6 +467,7 @@ def verify_document(
     )
     _audit(
         db,
+        user_id=user_id,
         verification_id=vid,
         event_type=audit_service.EVENT_INTELLIGENCE_ANALYSIS,
         stage="intelligence",
@@ -465,6 +483,7 @@ def verify_document(
     )
     _audit(
         db,
+        user_id=user_id,
         verification_id=vid,
         event_type=audit_service.EVENT_CONSISTENCY_ANALYSIS,
         stage="intelligence",
@@ -491,13 +510,14 @@ def verify_document(
         status=prediction,
         confidence=confidence,
         ocr_completed=extraction.ocr_used,
+        user_id=user_id,
     )
     # db.add(certificate) + flush are intentionally deferred until just before
     # the Verification row is created, so the incremental audit commits above
     # never commit the certificate prematurely.
 
-    # --- Phase 8 duplicate detection ---
-    duplicate_info = find_duplicate(db, content, fields)
+    # --- Phase 8 duplicate detection (scoped to the acting user) ---
+    duplicate_info = find_duplicate(db, content, fields, user_id=user_id)
 
     # --- Phase 9 advisory indicators (never touch the ML prediction) ---
     ood_status = compute_ood_status(intelligence, extraction, features)
@@ -533,7 +553,7 @@ def verify_document(
             },
             ood_status=ood_status,
         )
-        _record_evidence_events(db, vid, evidence)
+        _record_evidence_events(db, vid, evidence, user_id)
     except Exception as exc:  # noqa: BLE001 - forensics must never break verification
         logger.warning("Phase 12 evidence pipeline failed [%s]: %s", vid, exc)
         evidence = {
@@ -565,6 +585,7 @@ def verify_document(
         }
         _audit(
             db,
+            user_id=user_id,
             verification_id=vid,
             event_type=audit_service.EVENT_PIPELINE_FAILED,
             stage="analysis",
@@ -579,6 +600,7 @@ def verify_document(
         )
         _audit(
             db,
+            user_id=user_id,
             verification_id=vid,
             event_type=audit_service.EVENT_EVIDENCE_FUSION,
             stage="fusion",
@@ -606,6 +628,7 @@ def verify_document(
 
     _audit(
         db,
+        user_id=user_id,
         verification_id=vid,
         event_type=audit_service.EVENT_FINAL_DECISION,
         stage="decision",
@@ -631,6 +654,7 @@ def verify_document(
     verification = Verification(
         verification_id=vid,
         certificate_id=certificate.id,
+        user_id=user_id,
         filename=filename,
         prediction=prediction,
         label=prediction.upper(),

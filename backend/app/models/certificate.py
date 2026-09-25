@@ -10,6 +10,9 @@ def utc_now():
 class Certificate(Base):
     __tablename__ = "certificates"
     id = Column(Integer, primary_key=True)
+    # Clerk user id of the user who uploaded/created this certificate. Null for
+    # legacy records which remain hidden from all users.
+    user_id = Column(String, index=True, nullable=True)
     original_filename = Column(String, nullable=False)
     stored_filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)

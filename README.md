@@ -1,487 +1,518 @@
-# CertiGuard
+# CertiGuard — AI-Powered Certificate Verification System
 
-### AI-Powered Certificate Verification & Fraud Detection
+CertiGuard is an AI-powered certificate verification platform designed to help identify potentially fraudulent certificates through machine learning, certificate data analysis, and a streamlined verification workflow.
 
-CertiGuard is an AI-assisted certificate analysis platform that examines uploaded documents for potential inconsistencies and suspicious characteristics. It combines document processing, machine-learning inference, forensic and consistency checks, and evidence aggregation to help users review certificates.
-
-> **Important:** CertiGuard provides decision support, not an official determination of authenticity. A model prediction or forensic indicator is not proof of fraud, and a favorable result is not proof that a certificate is genuine. Where necessary, confirm certificates directly with the issuing institution.
+The project combines a **FastAPI backend**, a **React + TypeScript frontend**, and a machine learning model to evaluate certificate information and return verification results. Docker Compose makes it easier to run the frontend and backend together.
 
 ---
 
-## Contents
+## ✨ Features
 
-- [Overview](#overview)
-- [Problem Statement](#problem-statement)
-- [Objectives](#objectives)
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Architecture](#architecture)
-- [Machine Learning](#machine-learning)
-- [Issuer Verification](#issuer-verification)
-- [Audit Trail and Records](#audit-trail-and-records)
-- [Technology Stack](#technology-stack)
-- [Repository Layout](#repository-layout)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Authentication (Clerk)](#authentication-clerk)
-- [API Reference](#api-reference)
-- [Data and Evaluation](#data-and-evaluation)
-- [Testing](#testing)
-- [Security and Privacy](#security-and-privacy)
-- [Limitations](#limitations)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+- **AI-Powered Verification:** Uses a trained machine learning model to analyze certificate features and predict potential fraud.
+- **Certificate Management:** Supports certificate submission and verification workflows.
+- **Verification Results:** Displays prediction results and relevant verification information.
+- **Audit Logging:** Records application events for traceability.
+- **Modern Web Interface:** Responsive frontend built with React, TypeScript, and Vite.
+- **REST API:** FastAPI backend exposes endpoints for application functionality.
+- **Containerized Deployment:** Docker and Docker Compose simplify local setup and execution.
+- **Persistent Storage:** SQLite database, uploaded files, and monitoring logs can persist across container restarts.
+- **Health Monitoring:** Health endpoints help confirm that the application and model are running.
+- **Nginx Reverse Proxy:** Routes frontend traffic and API requests to the appropriate service.
 
-## Overview
+---
 
-Digital certificates are used to represent educational qualifications, professional achievements, and training completion. Manually reviewing certificates can take time, particularly when documents come from different issuers or use different formats.
+## 🏗️ Technology Stack
 
-CertiGuard is intended to assist with the initial review by extracting document information, analyzing a range of signals, and presenting a structured assessment for human review.
+### Frontend
+- React
+- TypeScript
+- Vite
+- Nginx
 
-## Problem Statement
+### Backend
+- Python
+- FastAPI
+- SQLAlchemy
+- SQLite
 
-Manual certificate review can be difficult to scale and may require reviewers to inspect document content, formatting, and other characteristics individually. CertiGuard aims to organize parts of this process into a repeatable analysis workflow while making clear that automated analysis cannot replace official issuer confirmation.
+### Machine Learning
+- Scikit-learn
+- Random Forest classifier
+- Model version: `random_forest_v3`
+- 31 model features
 
-## Objectives
+### Deployment and Development
+- Docker
+- Docker Compose
+- Git and GitHub
 
-- Automate initial certificate document analysis.
-- Extract information from supported documents.
-- Identify potential inconsistencies and suspicious characteristics.
-- Combine machine-learning output with additional analysis signals.
-- Present structured information to support human review.
-- Maintain traceability through verification records and audit events.
-- Provide a foundation for evaluation and improvement using appropriately labeled data.
+---
 
-## Features
+## 🧱 Architecture
 
-### Document processing
-
-- PDF text extraction.
-- OCR fallback where required by the document-processing workflow.
-- Preparation of extracted information for downstream analysis.
-
-### Machine-learning analysis
-
-- Random Forest classifier for certificate assessment.
-- A 31-feature model input schema.
-- Model inference used as one signal within the broader workflow.
-
-### Consistency and forensic checks
-
-The analysis pipeline includes consistency/intelligence, forensic, visual, and potential tampering checks. The interpretation of each signal should account for uncertainty and possible false positives.
-
-### Evidence aggregation
-
-Available analysis outputs are combined into a structured assessment. Model output, issuer-verification status, and other document signals should be understood as distinct sources of evidence.
-
-### Issuer-verification status handling
-
-The system defines the following issuer-verification statuses:
-
-| Status | Meaning |
-|---|---|
-| `VERIFIED_BY_ISSUER` | The issuer-verification process reports successful verification. |
-| `NOT_VERIFIED` | The issuer-verification process did not verify the certificate. |
-| `VERIFICATION_UNAVAILABLE` | The issuer-verification process could not be completed. |
-| `ISSUER_UNKNOWN` | The issuer could not be identified or matched to a supported issuer. |
-
-These statuses describe the issuer-verification layer; they are not interchangeable with the model's prediction. An unknown issuer or unavailable service must not automatically be interpreted as fraud.
-
-### Verification records and audit events
-
-The backend includes verification persistence and audit-event functionality. The documented audit route is:
-
-```http
-GET /api/verifications/{id}/audit
-```
-
-Confirm the route and its access controls in the running application before relying on it.
-
-## How It Works
-
-The intended high-level workflow is:
-
-1. **Upload** a certificate document.
-2. **Extract text** from the document, using OCR when necessary.
-3. **Generate features** in the format expected by the model.
-4. **Run model inference** using the configured classifier.
-5. **Perform additional analysis**, including applicable consistency, forensic, visual, and tampering checks.
-6. **Handle issuer verification**, when an issuer-verification service is available.
-7. **Aggregate evidence** from the available analysis stages.
-8. **Present an assessment** for human review.
-9. **Record verification activity** and applicable audit events.
-
-Actual processing and availability depend on the current code and runtime configuration.
-
-## Architecture
+CertiGuard uses a containerized, two-service architecture.
 
 ```text
-┌─────────────────────────┐
-│ React + TypeScript UI   │
-└────────────┬────────────┘
-             │ HTTP/API
-             ▼
-┌─────────────────────────┐
-│ FastAPI backend          │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ PDF text extraction/OCR │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ Feature generation      │
-│ 31-feature model schema │
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ ML and document checks  │
-│ Consistency/forensics   │
-│ Visual/tampering signals│
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ Evidence aggregation    │
-│ Issuer status, if usable│
-└────────────┬────────────┘
-             ▼
-┌─────────────────────────┐
-│ Assessment and records  │
-│ Audit events            │
-└─────────────────────────┘
+                   User / Browser
+                         |
+                         v
+                http://localhost:8080
+                         |
+                         v
+                +------------------+
+                | Frontend         |
+                | React + Vite     |
+                | Nginx            |
+                +------------------+
+                         |
+                         | /api/* requests
+                         v
+                +------------------+
+                | Backend          |
+                | FastAPI          |
+                | Machine Learning |
+                +------------------+
+                    |          |
+                    v          v
+                SQLite DB   Uploads /
+                            Logs
 ```
 
-This is a conceptual overview, not a guarantee that every stage is enabled in every deployment.
+### Services
 
-## Machine Learning
+| Service | Technology | Local URL |
+|---|---|---|
+| Frontend | React, TypeScript, Nginx | `http://localhost:8080` |
+| Backend | FastAPI, Python | `http://localhost:8000` |
+| API Documentation | FastAPI Swagger UI | `http://localhost:8000/docs` |
+| API Health | FastAPI | `http://localhost:8000/api/health` |
 
-### Documented model configuration
+The frontend uses Nginx to serve the built React application and proxy `/api/` requests to the backend over the Docker Compose network.
 
-| Property | Configuration |
-|---|---|
-| Classifier | Random Forest |
-| Model identifier | `random_forest_v3` |
-| Artifact path | `models/artifacts/model.joblib` |
-| Feature count | 31 |
-| Decision threshold | `0.5` |
+---
 
-The model artifact, preprocessing steps, feature names and order, and threshold form a versioned interface. Changes should be evaluated before being promoted.
-
-### Interpretation
-
-A model prediction is probabilistic and may be wrong. Performance on synthetic or narrow evaluation data may not represent performance on documents from new institutions, formats, scanners, or regions. Results should be interpreted with the available supporting evidence and reviewed by a person.
-
-## Issuer Verification
-
-Issuer verification is conceptually separate from model inference and document analysis. In the documented development state, issuer-side verification endpoints were not configured for known issuers, so independent confirmation may be unavailable.
-
-Do not interpret `ISSUER_UNKNOWN` or `VERIFICATION_UNAVAILABLE` as evidence that a certificate is fraudulent.
-
-## Audit Trail and Records
-
-The backend includes verification persistence and audit-event functionality. The documented audit endpoint is:
-
-```http
-GET /api/verifications/{id}/audit
-```
-
-Verify the current route definitions and authorization behavior in the codebase. Records and uploaded files may have separate lifecycles, so retention and deletion behavior should be explicitly reviewed before deployment.
-
-## Technology Stack
-
-| Area | Technology |
-|---|---|
-| Backend API | Python, FastAPI |
-| Frontend | React, TypeScript |
-| Machine learning | Scikit-learn Random Forest inference |
-| Model serialization | Joblib |
-| Document processing | PDF text extraction and OCR fallback |
-| Testing | Backend automated tests; frontend type checking |
-
-Refer to the repository's dependency files for exact versions and package-manager instructions.
-
-## Repository Layout
-
-The following is a **partial, illustrative** layout of documented modules. Use the actual checked-out repository as the source of truth; paths may vary.
-
-```text
-CertiGuard/
-├── backend/
-│   └── ...
-├── frontend/
-│   └── src/
-│       └── ...
-├── models/
-│   └── artifacts/
-│       └── model.joblib
-├── data/
-│   ├── real_dataset/
-│   │   ├── genuine/
-│   │   ├── suspicious/
-│   │   └── uncertain/
-│   └── processed/
-├── README.md
-└── LICENSE
-```
-
-The real-data tooling has included modules named `ingest.py`, `feature_alignment.py`, `schema_validation.py`, and `leakage.py` under `backend/src/real_data/`. Confirm their presence and invocation path in the current checkout.
-
-## Getting Started
+## 🚀 Getting Started with Docker
 
 ### Prerequisites
 
-Install versions compatible with the repository's dependency files:
+Install the following tools:
 
-- Python
-- Node.js
-- npm or the package manager specified by the frontend
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - Git
+- A modern web browser
 
-### 1. Clone the repository
+Ensure Docker Desktop is running before starting the application.
+
+### 1. Clone the Repository
 
 ```bash
 git clone <YOUR_GITHUB_REPOSITORY_URL>
 cd CertiGuard
 ```
 
-Replace the URL and directory name with your repository's actual values.
+Replace `<YOUR_GITHUB_REPOSITORY_URL>` with your repository's actual Git URL.
 
-### 2. Install backend dependencies
+### 2. Configure Environment Variables
 
-Create and activate a virtual environment from the appropriate backend directory.
+Review the environment variables required by the backend and frontend.
 
-**Windows PowerShell example:**
+If the application uses Clerk authentication, configure the appropriate Clerk keys and authentication settings according to the project's existing environment configuration.
+
+**Important:** Never commit `.env` files, API keys, authentication secrets, or private credentials to GitHub.
+
+### 3. Build and Start the Application
+
+Run the following command from the project root:
+
+```bash
+docker compose up --build -d
+```
+
+Docker Compose builds the frontend and backend images and starts both services.
+
+### 4. Check the Running Containers
+
+```bash
+docker compose ps
+```
+
+View the application logs:
+
+```bash
+docker compose logs -f
+```
+
+View only backend logs:
+
+```bash
+docker compose logs -f backend
+```
+
+View only frontend logs:
+
+```bash
+docker compose logs -f frontend
+```
+
+### 5. Open the Application
+
+After the containers start, open:
+
+- **Frontend:** http://localhost:8080
+- **Backend API:** http://localhost:8000
+- **Swagger API Documentation:** http://localhost:8000/docs
+
+### 6. Verify Application Health
+
+Check the backend through the frontend's Nginx proxy:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+You can also check the backend directly:
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+A successful health response should indicate that the application is running and report the model status.
+
+The exact response may vary depending on the backend implementation and configuration.
+
+---
+
+## 🐳 Docker Commands
+
+### Start the Application
+
+```bash
+docker compose up -d
+```
+
+### Rebuild and Start
+
+Use this after making changes that need to be included in the container images:
+
+```bash
+docker compose up --build -d
+```
+
+### Stop the Application
+
+```bash
+docker compose down
+```
+
+This stops and removes the Compose containers and network without explicitly deleting named volumes.
+
+**Avoid `docker compose down -v` unless you deliberately intend to remove the Compose-managed volumes.**
+
+### Restart Services
+
+```bash
+docker compose restart
+```
+
+### Check Container Status
+
+```bash
+docker compose ps
+```
+
+### View Logs
+
+```bash
+docker compose logs -f
+```
+
+### Stop Viewing Logs
+
+Press `Ctrl+C`. This stops following the logs; it does not stop the containers.
+
+---
+
+## 💾 Data Persistence
+
+CertiGuard uses persistent storage for application data.
+
+| Data | Storage |
+|---|---|
+| Certificate and verification records | SQLite database bind-mounted from the host |
+| Uploaded files | Docker named volume |
+| Monitoring logs | Docker named volume |
+
+The SQLite database is configured at:
+
+```text
+/app/db/certificates.db
+```
+
+In the development setup, the database is mapped to:
+
+```text
+backend/certificates.db
+```
+
+The actual database location depends on the Compose configuration.
+
+### Important Notes
+
+- Keep the SQLite database file safe.
+- Back up important data before making database or deployment changes.
+- Stopping and recreating containers is different from deleting persistent volumes.
+- Do not delete Docker volumes or database files unless you understand their contents and have confirmed that a backup is available.
+- Runtime database files should not be committed to GitHub.
+
+---
+
+## 💻 Running Locally Without Docker
+
+You can also run the frontend and backend separately for development.
+
+### Backend Setup
+
+Navigate to the backend directory:
+
+```bash
+cd backend
+```
+
+Create and activate a Python virtual environment.
+
+**Windows PowerShell:**
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-Install dependencies using the requirements or project file that actually exists in the backend:
+Install the project's dependencies using the dependency file provided in the repository. For example, if the project contains `requirements.txt`:
 
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
-Run the installation command from the directory containing that file. If the project uses `pyproject.toml`, a lockfile, or another package manager, follow its documented workflow instead.
+Start the FastAPI application using the module and entry point configured in the project.
 
-### 3. Configure the environment
-
-Create the required local environment file(s) based on the project's configuration references or example files. Do not commit populated secrets or credentials.
-
-### 4. Run the backend
-
-Use the actual FastAPI application module and working directory from the repository. For example, if `main.py` is importable as `main`:
+For example, if the entry point is `main.py`:
 
 ```bash
 uvicorn main:app --reload --port 8000
 ```
 
-This example assumes the module path is correct for your checkout. The local address is commonly `http://127.0.0.1:8000` when using this command.
+Backend setup commands may need adjustment if the repository uses a different entry point or dependency manager.
 
-### 5. Run the frontend
+### Frontend Setup
 
-From the frontend directory:
+Open another terminal and navigate to the frontend directory:
+
+```bash
+cd frontend
+```
+
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-Use the scripts and package manager declared by the frontend's `package.json`. Open the development URL printed in the terminal.
+Use the local URL printed by Vite in the terminal.
 
-## Configuration
+**Note:** Local development may require different API and authentication environment variables from the Docker deployment.
 
-Configuration varies by environment. Review the current source and example environment files for required settings, which may include:
+---
 
-- Backend API URL.
-- Database or persistence configuration.
-- Model and inference settings.
-- Issuer-verification settings.
-- Clerk authentication settings (see [Authentication (Clerk)](#authentication-clerk)).
-- External-service credentials, if applicable.
+## 🔐 Authentication and Configuration
 
-A variable being set does not establish that its service is connected or working. Validate service health and responses before relying on it.
+CertiGuard may use Clerk for authentication, depending on the configured application environment.
 
-## Authentication (Clerk)
+Before running the application, review the existing environment configuration and ensure that the required keys are available to the appropriate service.
 
-All private API endpoints and the entire frontend are protected by **Clerk**-issued session tokens.
+Typical Clerk configuration may include:
 
-### Frontend
+- A publishable key for the frontend.
+- A secret key for backend authentication verification, if required.
+- Any application-specific authentication settings.
 
-- The browser loads Clerk via `@clerk/clerk-react` using `VITE_CLERK_PUBLISHABLE_KEY`.
-- Sign-in / sign-up are rendered with Clerk's prebuilt `<SignIn>` component using hash routing (`signInUrl="/sign-in"`, `signUpUrl="/sign-up"`); the "Create account" mode is driven by the URL hash so Clerk handles all flows (including password recovery) consistently.
-- `AuthSessionProvider` owns the session state machine. The app only considers the user signed in **after** a fresh session token has been minted with `getToken()` (with retry) and handed to the `api` client; then the token is re-minted every 60s. Until that happens the app shows a loading screen, and no protected request can fire without a token. This is what prevents the "dashboard flashes then bounces to login" race that occurred when first requests went out tokenless and their 401s signed out the brand-new session.
-- The token is kept in memory only — never written to `localStorage`.
-- The `api` client treats a backend `401` as "session expired" **only when an `Authorization` header was actually attached**. An anonymous 401 or a `403` never signs the user out, and the expired-handler fires at most once per session.
-- Clerk pending states use `treatPendingAsSignedOut: false` so a completing sign-up is not reported as signed out mid-flow.
+Use the actual environment variable names expected by the codebase.
 
-### Backend
+### Security Best Practices
 
-- Every route under documentation is owner-scoped. After a valid token is verified, the acting user is derived from the token's `sub` claim; owner identifiers are never accepted from the request body.
-- Verification uses the legitimate session-token flow via the `clerk-backend-api` package, with an explicit `iss` (issuer) check against `CLERK_ISSUER`. If `CLERK_ISSUER` is not configured, every request is rejected (there is no insecure fallback).
-- Legacy rows created before this feature have `user_id = NULL` and are invisible to every user. New rows are always bound to the acting user.
+- Never commit secret keys or credentials.
+- Keep local environment files out of version control.
+- Do not expose backend secret keys to frontend code.
+- Validate uploaded files on the server.
+- Restrict access to certificate records and uploaded documents.
+- Review authentication and authorization before deploying publicly.
 
-### Required environment variables
+---
 
-| Variable | Where | Purpose |
-|---|---|---|
-| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env` | Public Clerk SDK key. |
-| `CLERK_SECRET_KEY` | `backend/.env` | Backend-only secret for key material (`sk_...`). |
-| `CLERK_ISSUER` | `backend/.env` | Issuer: `https://<your-instance>.<clerk.accounts.dev>`. Authorization is refused when unset. |
-| `CLERK_AUTHORIZED_PARTIES` | `backend/.env` | Optional comma-separated allowed origins (e.g. `http://localhost:5173`). |
-| `CLERK_AUDIENCE` | `backend/.env` | Optional audience (`aud`) filter. |
-| `CLERK_JWT_KEY` / `CLERK_CLOCK_SKEW_MS` | `backend/.env` | Optional PEM public key / clock skew overrides. |
+## 📡 API and Health Checks
 
-Dashboard steps: enable the "session token" in **Sessions → Edit token customization**, copy `CLERK_ISSUER` from **API keys**, keep `CLERK_SECRET_KEY` server-side only, and list your SPA origin in **Allowed origins**. See `.env.example` for placeholders. Never commit real secrets.
+The backend is built with FastAPI and exposes REST API endpoints.
 
-## API Reference
+### Health Endpoint
 
-The documented audit route is:
-
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/verifications/{id}/audit` | Retrieve audit events for a verification record. |
-
-For the complete API reference, inspect the current FastAPI route definitions. If enabled, FastAPI's interactive documentation is often available at:
-
-```text
-http://127.0.0.1:8000/docs
+```http
+GET /api/health
 ```
 
-The URL above assumes the backend is running on port `8000` and exposes the standard documentation route.
+This endpoint reports the application's health and model-loading status.
 
-## Data and Evaluation
-
-The project has used synthetic training data and an external PDF validation set during development. Previously reported evaluation figures included:
-
-| Metric | Historical reported value |
-|---|---:|
-| External validation accuracy | 0.963 |
-| Genuine recall | 0.9286 |
-| Suspicious recall | 1.0 |
-| False positives reported | 1 |
-| False negatives reported | 0 |
-
-These are historical figures from development notes, not independently reproduced results in this README. They should not be presented as a guarantee of performance. The reported external set contained 27 PDFs and had limited representation of real certificates, which restricts conclusions about real-world generalization.
-
-### Real-data ingestion
-
-The documented ingestion workflow uses class folders such as:
-
-```text
-data/real_dataset/
-├── genuine/
-├── suspicious/
-└── uncertain/
-```
-
-Its supporting modules include ingestion, feature alignment, schema validation, and leakage checks. Uncertain labels are intended to be excluded from supervised training.
-
-A previously documented example invocation is:
+Example request:
 
 ```bash
-python -m src.real_data.ingest --base-dir ./data/real_dataset
+curl http://localhost:8000/api/health
 ```
 
-Run this only from a directory where the `src` package is importable, and verify the CLI options against the current implementation before use.
+### Model Information
 
-Before training or evaluating with real documents:
+```http
+GET /api/model/info
+```
 
-1. Ensure the documents were collected and may be used lawfully.
-2. Use a documented, reliable labeling process.
-3. Review generated features and schema-validation results.
-4. Keep a separate, frozen evaluation set.
-5. Check for duplicates and data leakage.
-6. Evaluate performance across relevant document sources and classes.
-7. Review results before considering any model or threshold change.
+This endpoint provides information about the loaded machine learning model, subject to the current backend implementation.
 
-Successful ingestion does not itself validate a model or justify replacing the production artifact.
+Example request:
 
-## Testing
+```bash
+curl http://localhost:8000/api/model/info
+```
 
-Use the test and quality-check commands defined by the current repository.
+### Interactive API Documentation
 
-Examples, if supported by the project:
+Open the following URL while the backend is running:
+
+http://localhost:8000/docs
+
+The Swagger interface displays the API endpoints and allows you to inspect their parameters, request formats, and responses.
+
+For the complete API contract, refer to the FastAPI routes implemented in the backend.
+
+---
+
+## 🧪 Testing
+
+Run tests using the commands and dependency configuration defined in the project.
+
+### Backend Tests
+
+From the backend directory, activate the project's Python environment and run:
 
 ```bash
 pytest
 ```
 
+### Frontend Tests
+
+From the frontend directory:
+
 ```bash
-cd frontend && npx tsc --noEmit && npm run build
+npm test
 ```
 
-The current backend suite passes (`354 passed`), covering public endpoints, authentication/authorization failures, per-user ownership isolation, and the existing verification pipeline. A passing test suite does not independently establish real-world model accuracy, issuer confirmation, or production readiness.
+### Frontend Type Checking
 
-## Security and Privacy
+```bash
+npm run typecheck
+```
 
-Certificates can contain personal and confidential information. Before deploying CertiGuard:
+Use the actual scripts defined in `frontend/package.json` if they differ.
 
-- Authentication and per-user ownership are enforced on every private endpoint; verify the running behavior before exposing the application.
-- Restrict access to uploaded files, verification history, and audit data to the owning user.
-- Keep secrets and credentials out of source control.
-- Do not publish private certificates or datasets without a lawful basis and appropriate safeguards.
-- Define retention and deletion policies for both files and database records.
-- Validate file types, file sizes, and processing limits.
-- Avoid leaking sensitive document contents through logs or error messages.
-- Review dependency security and deployment configuration.
-- Clearly communicate the limitations of automated results.
+### Docker Verification Checklist
 
-An earlier architecture review identified access control as a deployment concern. Authentication (Clerk) and per-user ownership scoping were implemented; reassess the current configuration before exposing the application to untrusted users.
+After building and starting the application, verify:
 
-## Limitations
-
-The following points were identified during development and should be checked against the current version:
-
-- **Real-world evaluation:** Synthetic data and a small external PDF set are insufficient to establish broad generalization.
-- **Issuer integrations:** Issuer-side verification was not configured for known issuers in the documented state.
-- **Data pipeline validation:** Real-data ingestion requires testing with appropriately labeled documents and review of its outputs.
-- **Access control:** Authentication and per-user ownership are implemented; verify the Clerk configuration, issuer setup, and legacy-data visibility before deployment.
-- **Data lifecycle:** Uploaded files and database records may have different retention behavior.
-- **Frontend experience:** Progress handling, cancellation, timeout behavior, and automated UI coverage were identified as improvement areas.
-- **Operational readiness:** CI, dependency alignment, configuration validation, and deployment documentation should be reviewed.
-
-These are historical development observations, not a claim that every item remains unresolved.
-
-## Roadmap
-
-Potential areas for future work:
-
-- Expand the diverse, human-verified real-world certificate dataset.
-- Maintain a frozen real-world evaluation set.
-- Improve calibration and document the evaluation methodology.
-- Add authorized issuer integrations where available.
-- Strengthen authentication, authorization, and privacy controls.
-- Improve retention and deletion workflows.
-- Add robust upload limits and error handling.
-- Improve progress reporting, cancellation, and timeout handling.
-- Expand frontend automated tests.
-- Add CI and dependency/security checks.
-- Improve monitoring, auditability, and deployment documentation.
-
-## Contributing
-
-Contributions are welcome.
-
-1. Fork the repository.
-2. Create a focused feature branch.
-3. Make your changes.
-4. Add or update tests where appropriate.
-5. Run the relevant checks.
-6. Submit a pull request describing the change and its impact.
-
-Changes to the model, feature schema, threshold, or evaluation data should include a clear validation methodology and results. Avoid promoting model changes without deliberate review.
-
-## License
-
-This project is licensed under the **MIT License**. See the [`LICENSE`](LICENSE) file for details.
-
-## Disclaimer
-
-CertiGuard is an AI-assisted certificate analysis and decision-support project. Automated predictions and forensic indicators may contain errors. A suspicious indicator is not proof of fraud, and a favorable result is not proof of authenticity. Obtain independent confirmation from the issuing institution when required and handle certificate data responsibly.
+- [ ] Both containers start successfully.
+- [ ] The frontend loads in a browser.
+- [ ] The backend health endpoint responds successfully.
+- [ ] The model loads correctly.
+- [ ] API requests are routed through Nginx.
+- [ ] Frontend navigation and deep links work.
+- [ ] Authentication works in the configured environment.
+- [ ] Certificate submission and verification work.
+- [ ] Persistent data remains available after a normal container restart.
 
 ---
 
-**CertiGuard — Certificate analysis supported by machine learning and evidence.**
+## 🛡️ Privacy and Security
+
+Certificate verification can involve sensitive personal and educational information.
+
+CertiGuard should be used with appropriate safeguards:
+
+- Protect uploaded documents and certificate records.
+- Apply authentication and authorization to sensitive operations.
+- Avoid logging unnecessary personal information.
+- Keep credentials and secrets out of source control.
+- Back up persistent data securely.
+- Validate files and request data before processing.
+- Review deployment settings before exposing the application to the internet.
+
+The machine learning output should be treated as an assessment to support verification, not as definitive proof that a certificate is genuine or fraudulent.
+
+---
+
+## ⚠️ Limitations
+
+- Machine learning predictions depend on the quality and representativeness of the training data.
+- Predictions may contain false positives and false negatives.
+- Model performance on unseen certificates may differ from historical evaluation results.
+- Database persistence and uploaded-file storage depend on the deployment configuration.
+- Authentication behavior depends on the configured identity provider and environment variables.
+- The application should not replace independent verification with the issuing institution.
+
+---
+
+## 🔮 Future Improvements
+
+Potential future enhancements include:
+
+- OCR-based certificate data extraction.
+- QR code and digital-signature verification.
+- Integration with official certificate issuers.
+- Improved model explainability.
+- Expanded evaluation datasets and monitoring.
+- Role-based access control.
+- Production deployment and automated CI/CD.
+- More comprehensive integration and security testing.
+
+---
+
+## 🤝 Contributing
+
+Contributions, bug reports, and suggestions are welcome.
+
+To contribute:
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Run the relevant tests.
+5. Commit your changes with a clear message.
+6. Open a pull request describing the changes.
+
+Please avoid committing credentials, generated artifacts, local databases, or private certificate data.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## ⚖️ Disclaimer
+
+CertiGuard is an educational and technical project intended to assist certificate verification. Its machine learning predictions are not a substitute for confirmation from the relevant issuing institution. The developers do not guarantee that every certificate will be classified correctly.
+
+---
+
+**Built with Python, FastAPI, React, TypeScript, scikit-learn, and Docker.**

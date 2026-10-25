@@ -4,7 +4,9 @@ Provides a single, configurable OCR layer used by the extraction service:
 
   - ``rapidocr``  RapidOCR (ONNX Runtime) — bundles its own detection +
                   recognition models, so no external Tesseract binary is
-                  required. Preferred engine.
+                  required. Preferred engine. Uses the maintained ``rapidocr``
+                  package; the retired ``rapidocr_onnxruntime`` is no longer a
+                  dependency.
   - ``pytesseract`` Tesseract via pytesseract — used only when a Tesseract
                   binary is available on the system.
   - ``auto``     Try rapidocr, then pytesseract.
@@ -59,7 +61,7 @@ def _engine_selection() -> str:
 
 def _rapidocr_available() -> bool:
     try:
-        import rapidocr_onnxruntime  # noqa: F401
+        import rapidocr  # noqa: F401
         return True
     except ImportError:
         return False
@@ -82,7 +84,11 @@ def _get_rapid_engine():
     if _rapid_engine is None:
         with _rapid_engine_lock:
             if _rapid_engine is None:
-                from rapidocr_onnxruntime import RapidOCR
+                # The maintained ``rapidocr`` package bundles the detection,
+                # classification and recognition ONNX models. ONNX Runtime is
+                # installed explicitly (see requirements.txt) and is used as
+                # the default CPU execution engine.
+                from rapidocr import RapidOCR
                 _rapid_engine = RapidOCR()
     return _rapid_engine
 
@@ -102,27 +108,32 @@ def _ocr_rapid(image: Image.Image, languages: str) -> OcrResult:
         logger.warning("RapidOCR failed: %s", exc)
         return OcrResult(failed=True, engine="rapidocr", error=str(exc))
 
-    if not result or not result[0]:
+    # The maintained ``rapidocr`` package returns a ``RapidOCROutput`` data
+    # class (or an empty one when nothing was detected). ``txts``/``scores``
+    # are parallel tuples and may be ``None`` when no text was found.
+    txts = getattr(result, "txts", None)
+    scores = getattr(result, "scores", None)
+    if not txts:
         return OcrResult(failed=True, engine="rapidocr", error="no text")
 
     lines = []
     confidences = []
-    for item in result[0]:
-        # item = [quad_points, text, confidence]
-        if len(item) < 3:
-            continue
-        text = str(item[1]).strip()
+    for i, raw_text in enumerate(txts):
+        text = str(raw_text).strip() if raw_text is not None else ""
         if not text:
             continue
-        try:
-            confidences.append(float(item[2]))
-        except (TypeError, ValueError):
-            continue
         lines.append(text)
+        if scores is not None and i < len(scores):
+            try:
+                confidences.append(float(scores[i]))
+            except (TypeError, ValueError):
+                continue
 
     if not lines:
         return OcrResult(failed=True, engine="rapidocr", error="no text")
-    confidence = round(sum(confidences) / len(confidences), 4)
+    confidence = (
+        round(sum(confidences) / len(confidences), 4) if confidences else None
+    )
     return OcrResult(
         text="\n".join(lines),
         confidence=confidence,

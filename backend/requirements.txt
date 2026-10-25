@@ -1,30 +1,51 @@
-fastapi>=0.139.0
-uvicorn>=0.51.0
-python-multipart>=0.0.32
-pydantic>=2.13.0
-SQLAlchemy>=2.0.51
-psycopg2-binary>=2.9.12
-python-dotenv>=1.2.2
-PyYAML>=6.0.3
+# CertiGuard backend runtime + test dependencies.
+#
+# Target runtime: Python 3.12 (container baseline). Python 3.13 is not the
+# supported baseline because the previous OCR package had no 3.13 support;
+# the maintained ``rapidocr`` package is used instead (see below).
+#
+# Constraints are intentionally bounded to reproducible, mutually compatible
+# versions. Resolved versions are recorded in requirements.lock.txt.
+# Optional ML-extras (xgboost, used only by offline benchmarking) live in
+# requirements-ml-extras.txt so the runtime image does not pull the large
+# platform-specific NCCL wheel.
 
-numpy>=2.5.0
-pandas>=3.0.0
-scikit-learn>=1.9.0
-joblib>=1.5.0
-xgboost>=3.0.0
-PyMuPDF>=1.28.0
-Pillow>=12.0.0
+fastapi>=0.115,<0.170
+uvicorn>=0.30,<0.60
+python-multipart>=0.0.9,<0.1
+pydantic>=2.7,<3
+SQLAlchemy>=2.0,<2.2
+psycopg2-binary>=2.9,<3
+python-dotenv>=1.0,<2
+PyYAML>=6.0,<7
+
+numpy>=2.0,<3
+pandas>=2.2.2,<3
+scipy>=1.13,<2
+# The production artifact (random_forest_v3) was serialized with
+# scikit-learn 1.9.0; keep the same minor line to avoid pickle/version drift.
+scikit-learn>=1.9,<1.10
+joblib>=1.4,<2
+
+# PyMuPDF 2.x is a new major line; stay on the validated 1.x series.
+PyMuPDF>=1.24,<2
+Pillow>=12,<13
 
 # --- Phase 10 OCR (bundled ONNX models, no external binary required) ---
-rapidocr_onnxruntime>=1.3.24
-onnxruntime>=1.20.0
+# ``rapidocr_onnxruntime`` is retired upstream and has no Python 3.13/
+# maintainable path. ``rapidocr`` is the maintained successor and bundles the
+# detection/classification/recognition models. ONNX Runtime is the default CPU
+# inference engine and is installed explicitly below.
+rapidocr>=2.0.6,<4
+onnxruntime>=1.19,<2
 
 # --- Phase 12 evidence engine (QR decoding; optional, degrades gracefully) ---
-opencv-python-headless>=4.10.0
+opencv-python-headless>=4.10,<5
 
 # --- Clerk authentication (remote JWKS/key fetching via the Backend API) ---
-clerk-backend-api>=7.0.0
-PyJWT[crypto]>=2.8.0
+clerk-backend-api>=7,<8
+PyJWT[crypto]>=2.8,<3
 
-pytest>=9.0.0
-httpx>=0.28.0
+# --- Tests ---
+pytest>=8,<10
+httpx>=0.27,<0.29

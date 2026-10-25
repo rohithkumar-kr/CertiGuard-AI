@@ -11,6 +11,10 @@ network calls) without weakening the dependency wiring.
 from types import SimpleNamespace
 
 import pytest
+from clerk_backend_api.security.types import (
+    AuthErrorReason,
+    TokenVerificationErrorReason,
+)
 
 from app.core import auth as auth_module
 from app.main import app
@@ -72,24 +76,38 @@ def _state(signed_in: bool, payload=None, reason=None):
 
 
 def _fake_authenticate(request):
-    """Mirror of the real verifier's contract driven by the Authorization header."""
+    """Mirror of the real verifier's contract driven by the Authorization header.
+
+    Failures return the SDK's real enum reasons (whose ``.value`` is a
+    ``(slug, message)`` tuple) so the 401 mapping is exercised exactly as in
+    production. Returning plain strings here previously hid the
+    ``AttributeError: ... has no attribute 'lower'`` regression that turned
+    unauthenticated requests into HTTP 500s.
+    """
     header = request.headers.get("authorization") or request.headers.get("Authorization")
     if not header:
-        return _state(False, reason="session_token_missing")
+        return _state(False, reason=AuthErrorReason.SESSION_TOKEN_MISSING)
     if not header.startswith(BEARER):
-        return _state(False, reason="session_token_invalid")
+        return _state(False, reason=TokenVerificationErrorReason.INVALID_TOKEN_TYPE)
     token = header[len(BEARER):].strip()
     if not token:
-        return _state(False, reason="session_token_invalid")
+        return _state(False, reason=TokenVerificationErrorReason.INVALID_TOKEN_TYPE)
     if token in ("expired", "garbage", "forged"):
-        return _state(False, reason="token_expired" if token == "expired" else "token_invalid")
+        return _state(
+            False,
+            reason=(
+                TokenVerificationErrorReason.TOKEN_EXPIRED
+                if token == "expired"
+                else TokenVerificationErrorReason.TOKEN_INVALID
+            ),
+        )
     if token == "issuer-mismatch":
         return _state(True, payload={"sub": TEST_USER_A, "iss": "https://evil.example.com"})
     if token == TEST_USER_A:
         return _state(True, payload={"sub": TEST_USER_A, "iss": ISSUER, "sid": "sess_a"})
     if token == TEST_USER_B:
         return _state(True, payload={"sub": TEST_USER_B, "iss": ISSUER, "sid": "sess_b"})
-    return _state(False, reason="token_invalid")
+    return _state(False, reason=TokenVerificationErrorReason.TOKEN_INVALID)
 
 
 @pytest.fixture
@@ -140,6 +158,57 @@ def test_protected_endpoints_reject_bad_tokens(client, strict_auth, headers):
     resp = client.get("/api/verifications", headers=headers)
     assert resp.status_code == 401, resp.text
     assert resp.json()["detail"]
+
+
+def test_enum_failure_reason_maps_to_401_not_500(client, strict_auth):
+    """Regression: SDK enum reasons must not crash the unauthorized path.
+
+    The verifier returns ``AuthErrorReason``/``TokenVerificationErrorReason``
+    enums whose ``.value`` is a ``(slug, message)`` tuple. The old code called
+    ``.lower()`` directly on that object, raising ``AttributeError`` and turning
+    a missing token into HTTP 500 instead of 401. This drives the real
+    dependency end-to-end with the SDK's real enum.
+    """
+    resp = client.get("/api/verifications")
+    assert resp.status_code == 401, resp.text
+    assert resp.json()["detail"] == "Missing session token"
+    assert resp.headers.get("WWW-Authenticate", "").startswith("Bearer")
+
+
+@pytest.mark.parametrize(
+    ("reason", "expected"),
+    [
+        (AuthErrorReason.SESSION_TOKEN_MISSING, "session-token-missing"),
+        (AuthErrorReason.SECRET_KEY_MISSING, "secret-key-missing"),
+        (TokenVerificationErrorReason.TOKEN_EXPIRED, "token-expired"),
+        (TokenVerificationErrorReason.TOKEN_INVALID_AUDIENCE, "token-invalid-audience"),
+        (("token-expired", "Token has expired"), "token-expired"),
+        ("token_invalid", "token-invalid"),
+        ("JWK_FAILED_TO_LOAD", "jwk-failed-to-load"),
+        (None, ""),
+    ],
+)
+def test_reason_slug_normalization(reason, expected):
+    assert auth_module._reason_slug(reason) == expected
+
+
+@pytest.mark.parametrize(
+    ("reason", "detail"),
+    [
+        (AuthErrorReason.SESSION_TOKEN_MISSING, "Missing session token"),
+        (TokenVerificationErrorReason.TOKEN_EXPIRED, "Session token expired"),
+        (TokenVerificationErrorReason.TOKEN_INVALID_SIGNATURE, "Invalid session token"),
+        (("server-error", "boom"), "Unable to verify session token"),
+        ("unknown-failure", "Authentication required"),
+        (object(), "Authentication required"),
+        (None, "Authentication required"),
+    ],
+)
+def test_auth_error_accepts_any_reason_shape(reason, detail):
+    exc = auth_module._auth_error(reason)
+    assert exc.status_code == 401
+    assert exc.detail == detail
+    assert exc.headers["WWW-Authenticate"] == "Bearer"
 
 
 def test_token_wrong_issuer_rejected(client, strict_auth):

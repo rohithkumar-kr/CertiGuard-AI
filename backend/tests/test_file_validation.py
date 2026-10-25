@@ -79,13 +79,44 @@ def test_stored_filename_is_random():
     assert len(a.split(".")[0]) == 32  # uuid4 hex
 
 
-def test_safe_join_blocks_traversal():
+@pytest.mark.parametrize(
+    "name",
+    [
+        "../escape.pdf",
+        "..\\escape.pdf",
+        "..\\..\\escape.pdf",
+        "nested/escape.pdf",
+        "nested\\escape.pdf",
+        "/etc/passwd",
+        "\\server\\share\\escape.pdf",
+        "C:\\Temp\\escape.pdf",
+        "C:escape.pdf",
+        ".",
+        "..",
+        "",
+    ],
+)
+def test_safe_join_blocks_traversal(name):
     from pathlib import Path
 
     uploads = Path(settings.upload_dir)
     with pytest.raises(FileValidationError):
-        file_utils.safe_join(uploads, "../escape.pdf")
-    with pytest.raises(FileValidationError):
-        file_utils.safe_join(uploads, "..\\escape.pdf")
-    ok = file_utils.safe_join(uploads, "abc123.pdf")
-    assert ok == uploads / "abc123.pdf"
+        file_utils.safe_join(uploads, name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "abc123.pdf",
+        "certificate.final.v2.pdf",
+        "my certificate-2024.pdf",
+        "048cf3d8e2b74f4e9a1c6d5f4b3a2910.png",
+    ],
+)
+def test_safe_join_allows_legitimate_filenames(name):
+    from pathlib import Path
+
+    uploads = Path(settings.upload_dir)
+    joined = file_utils.safe_join(uploads, name)
+    assert joined == (uploads / name).resolve()
+    assert joined.parent == uploads.resolve()

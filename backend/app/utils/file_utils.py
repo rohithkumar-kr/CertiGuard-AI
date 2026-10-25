@@ -57,8 +57,27 @@ def make_stored_filename(ext: str) -> str:
 
 
 def safe_join(directory: Path, filename: str) -> Path:
-    """Join a directory and generated filename, guarding against traversal."""
+    """Join a directory and generated filename, guarding against traversal.
+
+    Both POSIX (``/``) and Windows (``\\``) separators are rejected as path
+    components regardless of the host OS. On POSIX a backslash is a legal
+    filename character, so relying only on ``Path.resolve()`` would accept
+    ``..\\escape.pdf`` as a harmless file name *inside* the upload directory
+    instead of recognizing it as a traversal attempt. Absolute paths, drive
+    prefixes, NUL bytes, and ``.``/``..`` components are rejected too.
+    """
+    if not isinstance(filename, str) or not filename or "\x00" in filename:
+        raise FileValidationError("Invalid file path.")
+    if filename in {".", ".."} or filename.startswith(("/", "\\")):
+        raise FileValidationError("Invalid file path.")
+    if "/" in filename or "\\" in filename:
+        raise FileValidationError("Invalid file path.")
+    # Windows drive-relative/absolute form (e.g. "C:escape.pdf").
+    if len(filename) >= 2 and filename[1] == ":":
+        raise FileValidationError("Invalid file path.")
+
+    base = directory.resolve()
     target = (directory / filename).resolve()
-    if not target.is_relative_to(directory.resolve()):
+    if not target.is_relative_to(base):
         raise FileValidationError("Invalid file path.")
     return target

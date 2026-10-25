@@ -41,20 +41,28 @@ from app.core.logging import get_logger
 
 logger = get_logger("auth")
 
-# Reason strings the SDK surfaces for a rejected session token. Kept as plain
-# strings so the dependency stays decoupled from SDK enum internals.
+# Reason slugs the SDK surfaces for a rejected session token. The SDK returns
+# an AuthErrorReason/TokenVerificationErrorReason enum (whose value is a
+# ``(slug, message)`` tuple) rather than a plain string, so callers must
+# normalize it before lookup. Hyphenated slugs are the SDK's canonical form.
+# Kept as plain strings so the dependency stays decoupled from SDK internals.
 TOKEN_ERROR_HINTS = {
-    "session_token_missing": "Missing session token",
-    "session_token_invalid": "Invalid session token",
-    "session_token_expired": "Session token expired",
-    "token_expired": "Session token expired",
-    "token_invalid": "Invalid session token",
-    "token_incorrect_audience": "Session token audience mismatch",
-    "token_nesisive_parties": "Session token authorized-party mismatch",
-    "jwk_failed_to_load": "Unable to load signing key",
-    "key_read_error": "Unable to read signing key",
-    "secret_key_missing": "Signing key not configured",
-    "token_not_active_yet": "Session token not active yet",
+    "session-token-missing": "Missing session token",
+    "secret-key-missing": "Signing key not configured",
+    "token-type-not-supported": "Invalid session token",
+    "jwk-failed-to-load": "Unable to load signing key",
+    "jwk-remote-invalid": "Unable to load signing key",
+    "jwk-failed-to-resolve": "Unable to read signing key",
+    "jwk-kid-mismatch": "Unable to load signing key",
+    "token-expired": "Session token expired",
+    "token-invalid": "Invalid session token",
+    "token-invalid-authorized-parties": "Session token authorized-party mismatch",
+    "token-invalid-audience": "Session token audience mismatch",
+    "token-iat-in-the-future": "Session token not active yet",
+    "token-not-active-yet": "Session token not active yet",
+    "token-invalid-signature": "Invalid session token",
+    "invalid-token-type": "Invalid session token",
+    "server-error": "Unable to verify session token",
 }
 
 
@@ -94,8 +102,28 @@ def _frontend_api_url(raw: str | None) -> str | None:
     return value or None
 
 
-def _auth_error(reason: str | None) -> HTTPException:
-    hint = TOKEN_ERROR_HINTS.get((reason or "").lower(), "Authentication required")
+def _reason_slug(reason: object) -> str:
+    """Normalize a verifier reason into the SDK's hyphenated slug.
+
+    The Clerk SDK surfaces failures as enums (``AuthErrorReason`` /
+    ``TokenVerificationErrorReason``) whose ``.value`` is a
+    ``(slug, human_message)`` tuple, not the plain underscored string the
+    previous code assumed. Calling ``.lower()`` on such an enum raised
+    ``AttributeError`` inside the 401 path, which turned every unauthenticated
+    request into a 500. Accept enum/tuple/string forms and normalize
+    underscores to hyphens so lookups in ``TOKEN_ERROR_HINTS`` always hit.
+    """
+    value = getattr(reason, "value", reason)
+    if isinstance(value, (tuple, list)):
+        value = value[0] if value else None
+    if value is None:
+        return ""
+    slug = str(value).strip().lower()
+    return slug.replace("_", "-")
+
+
+def _auth_error(reason: object) -> HTTPException:
+    hint = TOKEN_ERROR_HINTS.get(_reason_slug(reason), "Authentication required")
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=hint,

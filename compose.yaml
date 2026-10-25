@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        # Public frontend build-time configuration. Pass these explicitly, e.g.
+        #   docker compose --env-file frontend/.env build
+        # Never pass backend secrets as build args (they would be baked in).
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - APP_ENV=production
+      - UPLOAD_DIR=uploads
+      - MODEL_ARTIFACT_DIR=models/artifacts
+      - MODEL_METADATA_DIR=models/metadata
+      # The active SQLite database is mounted as a single file at /app/db.
+      # Mounting it this way keeps application code/model artifacts in the
+      # image (nothing under /app/backend is masked).
+      - DATABASE_URL=sqlite:////app/db/certificates.db
+    volumes:
+      - backend_uploads:/app/backend/uploads
+      # Single-file bind mount of the host's active database. The container
+      # directory /app/db is writable by the non-root appuser so SQLite can
+      # create its journal files; the database file itself lives on the host.
+      - ./backend/certificates.db:/app/db/certificates.db
+      - backend_monitoring_logs:/app/backend/monitoring/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  backend_uploads:
+  backend_monitoring_logs:

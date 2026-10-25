@@ -3,12 +3,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-      args:
-        # Public frontend build-time configuration. Pass these explicitly, e.g.
-        #   docker compose --env-file frontend/.env build
-        # Never pass backend secrets as build args (they would be baked in).
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    # Kept published during the frontend/Nginx migration; the SPA reaches the
+    # API same-origin through the frontend service instead of using this port.
     ports:
       - "8000:8000"
     env_file:
@@ -36,6 +32,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 90s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Public build-time value only. Supply it from frontend/.env:
+        #   docker compose --env-file frontend/.env build frontend
+        # Never add backend secrets (Clerk secret key, DATABASE_URL, ...) here:
+        # Vite inlines build args into the served bundle.
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   backend_uploads:

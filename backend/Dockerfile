@@ -1,26 +1,6 @@
-# Multi-stage build: frontend + backend
-FROM node:20-alpine AS frontend-build
-WORKDIR /frontend
-
-# Public, build-time frontend configuration (Vite inlines VITE_* values into
-# the static bundle). These are safe to expose; backend secrets must never be
-# passed here. Supply them with:
-#   docker compose --env-file frontend/.env build
-ARG VITE_CLERK_PUBLISHABLE_KEY=""
-ARG VITE_API_BASE_URL=""
-
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN set -e; \
-    if [ -z "$VITE_CLERK_PUBLISHABLE_KEY" ]; then \
-        echo "WARNING: VITE_CLERK_PUBLISHABLE_KEY is empty; the built frontend will show the authentication-not-configured screen." >&2; \
-    fi; \
-    if [ -n "$VITE_CLERK_PUBLISHABLE_KEY" ]; then export VITE_CLERK_PUBLISHABLE_KEY; fi; \
-    if [ -n "$VITE_API_BASE_URL" ]; then export VITE_API_BASE_URL; fi; \
-    npm run build
-
-# Backend runtime (Python 3.12 slim)
+# Backend runtime (Python 3.12 slim).
+# The React frontend is built and served by the separate frontend/Nginx image;
+# this image contains only the FastAPI application.
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
@@ -52,9 +32,6 @@ COPY backend/configs ./configs
 COPY backend/scripts ./scripts
 COPY backend/monitoring ./monitoring
 COPY backend/.env.example ./.env.example
-
-# Frontend build output served by backend
-COPY --from=frontend-build /frontend/dist /app/frontend/dist
 
 # Dedicated directory for the bind-mounted SQLite database. Keeping it outside
 # /app/backend means SQLite journal/WAL files never need the application source

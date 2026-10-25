@@ -21,8 +21,10 @@ import {
 import { classifyApiFailure, recoverFromAuthenticated401 } from "./authFlow";
 import { bearerRequestInit } from "./httpHeaders";
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
+// Empty base URL = same-origin requests ("/api/..."), which is what both the
+// Vite dev proxy and the production Nginx reverse proxy expect. Set
+// VITE_API_BASE_URL only for an intentionally cross-origin deployment.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
 export class ApiError extends Error {
   status?: number;

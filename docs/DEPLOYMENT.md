@@ -12,14 +12,22 @@ keep the Windows development workflow unchanged.
 
 ## 1. Build the frontend (static assets)
 
-The FastAPI backend serves the built SPA from `frontend/dist` when that folder
-exists.
+For Docker deployments this step is done inside the `frontend` image; see
+`DOCKER.md`. For a non-Docker deployment, build locally:
 
 ```bash
 cd frontend
 npm install
 npm run build        # outputs frontend/dist
 ```
+
+In a non-Docker deployment the FastAPI backend serves the built SPA from
+`frontend/dist` when that folder exists. In Docker, Nginx serves it and
+reverse-proxies `/api/` to the backend container.
+
+The API base URL defaults to same-origin (`/api/...`), so no absolute
+`VITE_API_BASE_URL` is needed. Only set it for an intentionally cross-origin
+deployment, and then add that frontend origin to `CORS_ORIGINS`.
 
 ## 2. Configure the backend
 
@@ -70,9 +78,10 @@ Notes for production:
 
 - Terminate TLS at a reverse proxy (nginx/Caddy) and set
   `CORS_ORIGINS` to the exact HTTPS origin; keep `APP_ENV=production`.
-- Run the backend on the same host as the built frontend so
-  `frontend/dist` is served, or mount the built SPA elsewhere and reverse-proxy
-  `/api/*` to the backend.
+- Serve the built SPA from that reverse proxy and forward `/api/` to the
+  backend without stripping the prefix. In the Docker setup, the `frontend`
+  Nginx container does this and proxies to `http://backend:8000` over the
+  Compose network; the browser only talks to the frontend origin.
 - Use a PostgreSQL `DATABASE_URL` for shared/concurrent access.
 - Back up the database (SQLite: the `certificates.db` file) and the
   `backend/uploads` retention store as appropriate.

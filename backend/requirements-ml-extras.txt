@@ -1,0 +1,10 @@
+# Optional ML benchmarking/training extras.
+#
+# xgboost is imported lazily only by src/feedback/benchmark.py (the offline
+# candidate-model benchmark). It is NOT needed by the API runtime, and on Linux
+# the upstream xgboost wheel pulls a large platform-specific NCCL dependency.
+# Install separately when running the benchmark suite:
+#
+#     pip install -r requirements.txt -r requirements-ml-extras.txt
+#
+xgboost>=2.1,<3
